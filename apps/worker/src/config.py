@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     motion_cooldown: int = Field(30, description="Seconds between Gemini API calls")
     idle_timeout: int = Field(120, description="Seconds of no motion to end feeding event")
 
+    # Lark (Feishu) notifications
+    lark_webhook_url: str = Field("", description="Lark webhook URL (empty = disabled)")
+
 
 class ROI:
     """Region of Interest for a food bowl."""

@@ -12,6 +12,7 @@ from .analyzer import CatAnalyzer
 from .capture import capture_frames
 from .config import ROI, get_settings
 from .detector import MotionDetector
+from .notifier import LarkNotifier
 from .storage import PurrviewStorage
 from .tracker import FeedingTracker
 
@@ -28,8 +29,14 @@ def run() -> None:
 
     storage = PurrviewStorage()
     analyzer = CatAnalyzer()
+    notifier = LarkNotifier()
     cfg = get_settings()
     tracker = FeedingTracker(idle_timeout=cfg.idle_timeout)
+
+    if notifier.enabled:
+        print("[main] Lark notifications enabled")
+    else:
+        print("[main] Lark notifications disabled (no webhook URL)")
 
     # Load bowl configs
     bowls = storage.get_active_bowls()
@@ -94,6 +101,13 @@ def run() -> None:
                 cat_id = storage.resolve_cat_id(event.cat_name)
                 event_id = storage.save_feeding_event(event, cat_id)
                 print(f"[main] Saved event {event_id}")
+
+                # Send Lark notification
+                bowl_name = next(
+                    (b["name"] for b in bowls if b["id"] == bowl_id),
+                    bowl_id,
+                )
+                notifier.send_feeding_alert(event, bowl_name=bowl_name)
             except Exception as e:
                 print(f"[main] Failed to save event: {e}")
 

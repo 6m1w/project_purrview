@@ -28,6 +28,9 @@ out/
 *.swo
 .DS_Store
 
+# Data collection
+data/
+
 # Docker
 *.log
 

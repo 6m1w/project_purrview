@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings
+
+# Walk up from src/config.py to find project root .env
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]  # worker/src -> worker -> apps -> project_root
+_ENV_FILE = _PROJECT_ROOT / ".env"
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 
     # Supabase
     supabase_url: str = Field(..., description="Supabase project URL")

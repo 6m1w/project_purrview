@@ -15,12 +15,17 @@ project_purrview/
 ├── apps/
 │   ├── worker/          # Python stream processing
 │   │   ├── src/         # capture, detector, analyzer, tracker, storage, config, main
+│   │   │   ├── collect.py   # Data collection tool (RTMP → local frames)
+│   │   │   ├── notifier.py  # Lark webhook notifications
+│   │   │   └── digest.py    # Daily digest cron script
 │   │   ├── tests/
 │   │   ├── Dockerfile
 │   │   └── pyproject.toml
 │   └── web/             # Next.js dashboard
 │       ├── src/app/     # pages: landing, cats/, timeline/, reports/
 │       └── package.json
+├── scripts/
+│   └── ec2-collect.sh   # EC2 data collection (setup/start/stop/status)
 ├── supabase/migrations/ # SQL migration files
 ├── docs/PRD.md          # Product requirements (Chinese)
 └── .env.example
@@ -39,6 +44,14 @@ project_purrview/
 # Worker
 cd apps/worker && pip install -e ".[dev]"
 cd apps/worker && pytest
+
+# Data collection (local)
+cd apps/worker && .venv/bin/python -m src.collect --duration 3600 --interval 5
+
+# Data collection (EC2)
+./scripts/ec2-collect.sh setup   # first time
+./scripts/ec2-collect.sh start   # 24h, 5s/frame
+./scripts/ec2-collect.sh status  # check progress
 
 # Web
 cd apps/web && npm install

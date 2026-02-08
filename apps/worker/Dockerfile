@@ -13,4 +13,6 @@ RUN pip install --no-cache-dir .
 
 COPY src/ src/
 
+# Default: run main worker loop
+# Override with: docker run ... purrview-worker python -m src.collect --duration 3600
 CMD ["python", "-m", "src.main"]

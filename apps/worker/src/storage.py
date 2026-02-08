@@ -19,7 +19,7 @@ class PurrviewStorage:
 
     def __init__(self):
         s = get_settings()
-        self.client: Client = create_client(s.supabase_url, s.supabase_service_role_key)
+        self.client: Client = create_client(s.supabase_url, s.supabase_key)
 
     def get_cat_profiles(self) -> list[dict]:
         """Fetch all cat profiles with their reference photo URLs."""

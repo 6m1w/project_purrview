@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # Supabase
     supabase_url: str = Field(..., description="Supabase project URL")
-    supabase_service_role_key: str = Field(..., description="Supabase service role key")
+    supabase_key: str = Field(..., description="Supabase service role key")
 
     # Gemini
     gemini_api_key: str = Field(..., description="Google Gemini API key")

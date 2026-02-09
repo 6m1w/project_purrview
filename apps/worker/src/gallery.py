@@ -19,7 +19,7 @@ import numpy as np
 
 THUMB_WIDTH = 220
 THUMB_HEIGHT = 124
-MOTION_THRESHOLD = 1000
+MOTION_THRESHOLD = 5000
 
 
 def compute_motion(current: np.ndarray, previous: np.ndarray | None) -> int:

@@ -22,7 +22,7 @@ import numpy as np
 from .capture import CAPTURE_HEIGHT, CAPTURE_WIDTH, capture_frames
 from .config import get_settings
 
-MOTION_THRESHOLD = 1000
+MOTION_THRESHOLD = 5000
 THUMB_WIDTH = 220
 THUMB_HEIGHT = 124
 

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PurrView Gallery</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#111; color:#eee; font-family:system-ui,sans-serif; padding:16px; }
+  .header { display:flex; align-items:center; gap:12px; margin-bottom:4px; }
+  .header a { color:#888; text-decoration:none; font-size:1.2rem; }
+  .header a:hover { color:#eee; }
+  h1 { font-size:1.4rem; }
+  .stats { color:#999; font-size:0.85rem; margin-bottom:12px; }
+  .controls { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
+  .controls button {
+    padding:6px 14px; border:1px solid #444; border-radius:6px;
+    background:#222; color:#ddd; cursor:pointer; font-size:0.85rem;
+  }
+  .controls button.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+  .controls button:hover { background:#333; }
+  .controls button.active:hover { background:#2563eb; }
+  .right-controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .right-controls button { padding:4px 10px; font-size:0.8rem; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; display:inline-block; animation:pulse 2s infinite; }
+  .live-dot.off { background:#666; animation:none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-label { font-size:0.75rem; color:#888; margin-left:2px; }
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(var(--thumb-w, 220px), 1fr));
+    gap:6px;
+  }
+  .thumb {
+    border:2px solid #333; border-radius:4px; overflow:hidden;
+    position:relative; background:#000;
+  }
+  .thumb img { width:100%; display:block; }
+  .thumb .label {
+    position:absolute; bottom:0; left:0; font-size:0.65rem;
+    background:rgba(0,0,0,0.7); padding:1px 4px; color:#aaa;
+  }
+  .thumb .score {
+    position:absolute; top:0; right:0; font-size:0.65rem;
+    background:rgba(0,0,0,0.7); padding:1px 4px; color:#f87171;
+  }
+  .thumb .cat-badge {
+    position:absolute; top:0; right:0; font-size:0.6rem; font-weight:600;
+    padding:2px 5px; border-radius:0 0 0 4px;
+  }
+  .thumb .cat-badge.cat-yes { background:rgba(34,197,94,0.85); color:#fff; }
+  .thumb .cat-badge.cat-no { background:rgba(0,0,0,0.6); color:#666; }
+  .thumb .cat-desc {
+    font-size:0.7rem; padding:4px 6px; color:#a3e635;
+    background:#1a1a1a; display:none;
+  }
+  /* Show descriptions when grid has show-desc class (cat/no-cat filter) */
+  .grid.show-desc .thumb .cat-desc { display:block; }
+  /* Always show on hover in any mode */
+  .thumb:hover .cat-desc { display:block; }
+  .thumb.hidden { display:none; }
+  .loading { color:#666; font-size:0.9rem; padding:40px 0; text-align:center; }
+</style>
+</head>
+<body>
+<div class="header">
+  <a href="/">← 返回</a>
+  <h1>PurrView Gallery</h1>
+</div>
+<div class="stats" id="stats">加载中...</div>
+<div class="controls" id="controls" style="display:none">
+  <button class="active" onclick="filter('all')">All</button>
+  <button onclick="filter('cat')">Cat</button>
+  <button onclick="filter('no-cat')">No cat</button>
+  <button onclick="filter('unlabeled')">Unlabeled</button>
+  <button onclick="filter('no-motion')">No motion</button>
+  <div class="right-controls">
+    <span class="live-dot" id="liveDot"></span>
+    <span class="live-label" id="liveLabel"></span>
+    <button onclick="setSize(150)">S</button>
+    <button class="active" onclick="setSize(220)">M</button>
+    <button onclick="setSize(320)">L</button>
+  </div>
+</div>
+<div class="grid" id="grid"></div>
+<script>
+const MOTION_THRESHOLD = 5000;
+const REFRESH_INTERVAL = 30000;
+let entries = [];
+let currentFilter = 'all';
+let refreshTimer = null;
+let lastLength = 0;
+
+// Detect current date directory from URL path
+const dateDir = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+
+async function loadData() {
+  try {
+    const res = await fetch(`gallery_meta.jsonl?_=${Date.now()}`);
+    if (!res.ok) {
+      // Fallback: try gallery_meta.json (old format)
+      const res2 = await fetch(`gallery_meta.json?_=${Date.now()}`);
+      if (!res2.ok) throw new Error('No metadata');
+      entries = await res2.json();
+    } else {
+      const text = await res.text();
+      entries = text.trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+    }
+
+    // Normalize field names (gallery.py uses "motion", collect.py uses "motion_score")
+    entries = entries.map(e => ({
+      ...e,
+      motion_score: e.motion_score ?? e.motion ?? 0,
+    }));
+
+    const isNew = entries.length !== lastLength;
+    lastLength = entries.length;
+    render();
+
+    // Update live indicator
+    const dot = document.getElementById('liveDot');
+    const label = document.getElementById('liveLabel');
+    if (isNew && entries.length > 0) {
+      dot.className = 'live-dot';
+      label.textContent = `${entries.length} 帧 · 自动刷新中`;
+    } else {
+      dot.className = 'live-dot off';
+      label.textContent = `${entries.length} 帧 · 等待新数据`;
+    }
+  } catch (e) {
+    document.getElementById('stats').textContent = '暂无元数据，请等待采集开始';
+  }
+}
+
+function render() {
+  const motionCount = entries.filter(e => e.has_motion).length;
+  const catCount = entries.filter(e => e.cat_detected === true).length;
+  const noCatCount = entries.filter(e => e.cat_detected === false).length;
+  const unlabeledCount = entries.filter(e => e.cat_detected == null && e.has_motion).length;
+  const hasLabels = catCount + noCatCount > 0;
+
+  const statsText = hasLabels
+    ? `${dateDir} — ${entries.length} frames | ${catCount} with cat | ${noCatCount} no cat | ${unlabeledCount} unlabeled`
+    : `${dateDir} — ${entries.length} frames | ${motionCount} with motion (threshold: ${MOTION_THRESHOLD.toLocaleString()} px)`;
+  document.getElementById('stats').textContent = statsText;
+  document.getElementById('controls').style.display = 'flex';
+
+  // Update filter button labels
+  const btns = document.querySelectorAll('.controls > button');
+  btns[0].textContent = `All (${entries.length})`;
+  btns[1].textContent = `Cat (${catCount})`;
+  btns[2].textContent = `No cat (${noCatCount})`;
+  btns[3].textContent = `Unlabeled (${unlabeledCount})`;
+  btns[4].textContent = `No motion (${entries.length - motionCount})`;
+
+  const grid = document.getElementById('grid');
+  const maxMotion = Math.max(...entries.map(x => x.motion_score), 1);
+  const showDesc = currentFilter === 'cat' || currentFilter === 'no-cat';
+  grid.className = 'grid' + (showDesc ? ' show-desc' : '');
+
+  grid.innerHTML = entries.map(e => {
+    const cls = e.has_motion ? 'thumb motion' : 'thumb';
+    const hidden = shouldHide(e) ? ' hidden' : '';
+
+    // Border: green for cat, red-scale for unlabeled motion, gray for no motion/no cat
+    let borderColor = '#333';
+    if (e.cat_detected === true) {
+      borderColor = 'rgba(34,197,94,0.8)';
+    } else if (e.cat_detected === false) {
+      borderColor = '#333';
+    } else if (e.has_motion) {
+      const intensity = Math.min(e.motion_score / (maxMotion * 0.3), 1.0);
+      borderColor = `rgba(239,68,68,${intensity.toFixed(2)})`;
+    }
+
+    // Badge: cat label or motion score
+    let badge = '';
+    if (e.cat_detected === true) {
+      badge = `<span class="cat-badge cat-yes">CAT</span>`;
+    } else if (e.cat_detected === false) {
+      badge = `<span class="cat-badge cat-no">--</span>`;
+    } else {
+      badge = `<span class="score">${e.motion_score.toLocaleString()}</span>`;
+    }
+
+    // Description below image
+    const desc = e.cat_description
+      ? `<div class="cat-desc">${e.cat_description}</div>` : '';
+
+    return `<div class="${cls}${hidden}" data-motion="${e.motion_score}" ` +
+      `data-cat="${e.cat_detected ?? ''}" style="border-color:${borderColor}">` +
+      `<a href="${e.filename}" target="_blank">` +
+      `<img src="thumbs/${e.filename}" loading="lazy" alt="${e.filename}">` +
+      `</a>` +
+      `<span class="label">${e.filename.slice(0,6)}</span>` +
+      badge + desc +
+      `</div>`;
+  }).join('');
+}
+
+function shouldHide(e) {
+  if (currentFilter === 'cat') return e.cat_detected !== true;
+  if (currentFilter === 'no-cat') return e.cat_detected !== false;
+  if (currentFilter === 'unlabeled') return !(e.cat_detected == null && e.has_motion);
+  if (currentFilter === 'no-motion') return e.has_motion;
+  return false;
+}
+
+function filter(mode) {
+  currentFilter = mode;
+  document.querySelectorAll('.controls > button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // Show descriptions below thumbnails in cat/no-cat modes
+  const grid = document.getElementById('grid');
+  grid.classList.toggle('show-desc', mode === 'cat' || mode === 'no-cat');
+
+  document.querySelectorAll('.thumb').forEach(el => {
+    const cat = el.dataset.cat;
+    const m = parseInt(el.dataset.motion);
+    if (mode === 'all') el.classList.remove('hidden');
+    else if (mode === 'cat') el.classList.toggle('hidden', cat !== 'true');
+    else if (mode === 'no-cat') el.classList.toggle('hidden', cat !== 'false');
+    else if (mode === 'unlabeled') el.classList.toggle('hidden', cat !== '' || m <= MOTION_THRESHOLD);
+    else if (mode === 'no-motion') el.classList.toggle('hidden', m > MOTION_THRESHOLD);
+  });
+}
+
+function setSize(w) {
+  document.querySelector('.grid').style.setProperty('--thumb-w', w + 'px');
+  document.querySelectorAll('.right-controls button:not(:first-child)').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// Initial load + auto-refresh
+loadData();
+refreshTimer = setInterval(loadData, REFRESH_INTERVAL);
+</script>
+</body>
+</html>

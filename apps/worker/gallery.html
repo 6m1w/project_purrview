@@ -11,7 +11,8 @@
   .header a { color:#888; text-decoration:none; font-size:1.2rem; }
   .header a:hover { color:#eee; }
   h1 { font-size:1.4rem; }
-  .stats { color:#999; font-size:0.85rem; margin-bottom:12px; }
+  .stats { color:#999; font-size:0.85rem; margin-bottom:4px; }
+  .label-stats { color:#a78bfa; font-size:0.8rem; margin-bottom:12px; }
   .controls { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center; }
   .controls button {
     padding:6px 14px; border:1px solid #444; border-radius:6px;
@@ -33,9 +34,9 @@
   }
   .thumb {
     border:2px solid #333; border-radius:4px; overflow:hidden;
-    position:relative; background:#000;
+    position:relative; background:#000; cursor:pointer;
   }
-  .thumb img { width:100%; display:block; }
+  .thumb img { width:100%; display:block; pointer-events:none; }
   .thumb .label {
     position:absolute; bottom:0; left:0; font-size:0.65rem;
     background:rgba(0,0,0,0.7); padding:1px 4px; color:#aaa;
@@ -54,24 +55,113 @@
     font-size:0.7rem; padding:4px 6px; color:#a3e635;
     background:#1a1a1a; display:none;
   }
-  /* Show descriptions when grid has show-desc class (cat/no-cat filter) */
   .grid.show-desc .thumb .cat-desc { display:block; }
-  /* Always show on hover in any mode */
   .thumb:hover .cat-desc { display:block; }
   .thumb.hidden { display:none; }
-  .loading { color:#666; font-size:0.9rem; padding:40px 0; text-align:center; }
+
+  /* Pagination */
+  .pagination {
+    display:flex; gap:6px; align-items:center; justify-content:center;
+    margin:16px 0; flex-wrap:wrap;
+  }
+  .pagination button {
+    padding:6px 12px; border:1px solid #444; border-radius:6px;
+    background:#222; color:#ddd; cursor:pointer; font-size:0.85rem;
+    min-width:36px;
+  }
+  .pagination button:hover { background:#333; }
+  .pagination button.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+  .pagination button:disabled { opacity:0.3; cursor:not-allowed; }
+  .pagination .page-info { color:#888; font-size:0.8rem; margin:0 8px; }
+
+  /* Cat name tags on thumbnails */
+  .thumb .cat-names {
+    position:absolute; top:0; left:0; display:flex; gap:2px; flex-wrap:wrap; padding:2px;
+  }
+  .thumb .cat-name-tag {
+    font-size:0.55rem; font-weight:700; padding:1px 4px; border-radius:3px; color:#fff;
+  }
+
+  /* Labeling modal */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+    z-index:1000; justify-content:center; align-items:center; padding:16px;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal {
+    background:#1a1a1a; border-radius:12px; max-width:900px; width:100%;
+    max-height:90vh; overflow:hidden; display:flex; flex-direction:column;
+  }
+  .modal-img-wrap {
+    position:relative; background:#000; flex-shrink:0;
+    max-height:60vh; overflow:hidden; display:flex; justify-content:center;
+  }
+  .modal-img-wrap img { max-width:100%; max-height:60vh; object-fit:contain; }
+  .modal-nav {
+    position:absolute; top:50%; transform:translateY(-50%);
+    font-size:2rem; color:#fff; background:rgba(0,0,0,0.5); border:none;
+    cursor:pointer; padding:8px 14px; border-radius:8px;
+  }
+  .modal-nav:hover { background:rgba(0,0,0,0.8); }
+  .modal-nav.prev { left:8px; }
+  .modal-nav.next { right:8px; }
+  .modal-body { padding:16px; }
+  .modal-info {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:12px; font-size:0.85rem; color:#999;
+  }
+  .modal-info .desc { color:#a3e635; max-width:60%; }
+  .modal-counter { color:#666; font-size:0.8rem; }
+  .cat-buttons { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .cat-btn {
+    padding:8px 18px; border:2px solid #444; border-radius:8px;
+    background:#222; color:#ddd; cursor:pointer; font-size:1rem;
+    font-weight:600; transition:all 0.15s;
+  }
+  .cat-btn:hover { border-color:#888; }
+  .cat-btn.selected { color:#fff; }
+  .cat-btn .shortcut {
+    font-size:0.65rem; color:#666; margin-left:4px; font-weight:400;
+  }
+  .cat-btn.selected .shortcut { color:rgba(255,255,255,0.5); }
+  .no-cat-btn {
+    padding:8px 14px; border:2px solid #444; border-radius:8px;
+    background:#222; color:#888; cursor:pointer; font-size:0.85rem;
+    transition:all 0.15s;
+  }
+  .no-cat-btn:hover { border-color:#888; }
+  .no-cat-btn.selected { background:#ef4444; border-color:#ef4444; color:#fff; }
+  .modal-actions {
+    display:flex; gap:8px; align-items:center; justify-content:space-between;
+  }
+  .modal-actions .left { display:flex; gap:8px; }
+  .save-btn {
+    padding:8px 24px; border:none; border-radius:8px;
+    background:#22c55e; color:#fff; cursor:pointer; font-size:0.9rem;
+    font-weight:600;
+  }
+  .save-btn:hover { background:#16a34a; }
+  .save-btn:disabled { background:#333; color:#666; cursor:not-allowed; }
+  .close-btn {
+    padding:8px 16px; border:1px solid #444; border-radius:8px;
+    background:#222; color:#ddd; cursor:pointer; font-size:0.85rem;
+  }
+  .close-btn:hover { background:#333; }
+  .help-text { font-size:0.7rem; color:#555; }
 </style>
 </head>
 <body>
 <div class="header">
-  <a href="/">← 返回</a>
+  <a href="/">&#8592; &#36820;&#22238;</a>
   <h1>PurrView Gallery</h1>
 </div>
-<div class="stats" id="stats">加载中...</div>
+<div class="stats" id="stats">&#21152;&#36733;&#20013;...</div>
+<div class="label-stats" id="labelStats"></div>
 <div class="controls" id="controls" style="display:none">
   <button class="active" onclick="filter('all')">All</button>
   <button onclick="filter('cat')">Cat</button>
   <button onclick="filter('no-cat')">No cat</button>
+  <button onclick="filter('labeled')">Labeled</button>
   <button onclick="filter('unlabeled')">Unlabeled</button>
   <button onclick="filter('no-motion')">No motion</button>
   <div class="right-controls">
@@ -82,23 +172,73 @@
     <button onclick="setSize(320)">L</button>
   </div>
 </div>
+<div class="pagination" id="paginationTop"></div>
 <div class="grid" id="grid"></div>
+<div class="pagination" id="paginationBottom"></div>
+
+<!-- Labeling modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-img-wrap">
+      <img id="modalImg" src="" alt="">
+      <button class="modal-nav prev" onclick="navModal(-1)">&#8249;</button>
+      <button class="modal-nav next" onclick="navModal(1)">&#8250;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info">
+        <span id="modalFilename"></span>
+        <span class="desc" id="modalDesc"></span>
+        <span class="modal-counter" id="modalCounter"></span>
+      </div>
+      <div class="cat-buttons" id="catButtons"></div>
+      <div class="modal-actions">
+        <div class="left">
+          <button class="save-btn" id="saveBtn" onclick="saveLabel()">Save &amp; Next (Enter)</button>
+          <button class="close-btn" onclick="closeModal()">Close (Esc)</button>
+        </div>
+        <span class="help-text">1-5 select cat &middot; 0 no cat &middot; &#8592;&#8594; navigate</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const MOTION_THRESHOLD = 5000;
 const REFRESH_INTERVAL = 30000;
+const CAT_NAMES = ['大吉', '小慢', '麻酱', '松花', '小黑'];
+const CAT_COLORS = {
+  '大吉': '#f59e0b',
+  '小慢': '#3b82f6',
+  '麻酱': '#d97706',
+  '松花': '#22c55e',
+  '小黑': '#8b5cf6',
+};
+
 let entries = [];
+let labels = {};          // filename -> [cat_names]
 let currentFilter = 'all';
 let refreshTimer = null;
 let lastLength = 0;
 
-// Detect current date directory from URL path
+// Pagination state
+const PAGE_SIZE = 200;
+let currentPage = 0;
+let totalPages = 1;
+
+// Modal state
+let modalOpen = false;
+let modalIndex = -1;      // index into filteredIndices
+let filteredIndices = [];  // indices into entries[] for current filter
+let selectedCats = new Set();
+
 const dateDir = window.location.pathname.replace(/\/+$/, '').split('/').pop();
+
+// --- Data loading ---
 
 async function loadData() {
   try {
     const res = await fetch(`gallery_meta.jsonl?_=${Date.now()}`);
     if (!res.ok) {
-      // Fallback: try gallery_meta.json (old format)
       const res2 = await fetch(`gallery_meta.json?_=${Date.now()}`);
       if (!res2.ok) throw new Error('No metadata');
       entries = await res2.json();
@@ -106,43 +246,48 @@ async function loadData() {
       const text = await res.text();
       entries = text.trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
     }
-
-    // Normalize field names (gallery.py uses "motion", collect.py uses "motion_score")
     entries = entries.map(e => ({
       ...e,
       motion_score: e.motion_score ?? e.motion ?? 0,
     }));
-
     const isNew = entries.length !== lastLength;
     lastLength = entries.length;
     render();
-
-    // Update live indicator
     const dot = document.getElementById('liveDot');
     const label = document.getElementById('liveLabel');
     if (isNew && entries.length > 0) {
       dot.className = 'live-dot';
-      label.textContent = `${entries.length} 帧 · 自动刷新中`;
+      label.textContent = `${entries.length} 帧`;
     } else {
       dot.className = 'live-dot off';
-      label.textContent = `${entries.length} 帧 · 等待新数据`;
+      label.textContent = `${entries.length} 帧`;
     }
   } catch (e) {
-    document.getElementById('stats').textContent = '暂无元数据，请等待采集开始';
+    document.getElementById('stats').textContent = '暂无元数据';
   }
 }
 
+async function loadLabels() {
+  try {
+    const res = await fetch(`/api/labels/${dateDir}?_=${Date.now()}`);
+    if (res.ok) labels = await res.json();
+  } catch (e) { /* labels not available yet */ }
+}
+
+// --- Rendering ---
+
 function render() {
-  const motionCount = entries.filter(e => e.has_motion).length;
   const catCount = entries.filter(e => e.cat_detected === true).length;
   const noCatCount = entries.filter(e => e.cat_detected === false).length;
-  const unlabeledCount = entries.filter(e => e.cat_detected == null && e.has_motion).length;
-  const hasLabels = catCount + noCatCount > 0;
+  const unlabeledCatCount = entries.filter(e => e.cat_detected === true && !labels[e.filename]).length;
+  const labeledCount = entries.filter(e => labels[e.filename]).length;
 
-  const statsText = hasLabels
-    ? `${dateDir} — ${entries.length} frames | ${catCount} with cat | ${noCatCount} no cat | ${unlabeledCount} unlabeled`
-    : `${dateDir} — ${entries.length} frames | ${motionCount} with motion (threshold: ${MOTION_THRESHOLD.toLocaleString()} px)`;
-  document.getElementById('stats').textContent = statsText;
+  document.getElementById('stats').textContent =
+    `${dateDir} — ${entries.length} frames | ${catCount} cat detected | ${noCatCount} no cat`;
+  document.getElementById('labelStats').textContent =
+    labeledCount > 0
+      ? `标注进度: ${labeledCount} labeled / ${catCount} cat frames (${unlabeledCatCount} remaining)`
+      : `点击缩略图开始标注 (${catCount} cat frames to label)`;
   document.getElementById('controls').style.display = 'flex';
 
   // Update filter button labels
@@ -150,80 +295,143 @@ function render() {
   btns[0].textContent = `All (${entries.length})`;
   btns[1].textContent = `Cat (${catCount})`;
   btns[2].textContent = `No cat (${noCatCount})`;
-  btns[3].textContent = `Unlabeled (${unlabeledCount})`;
-  btns[4].textContent = `No motion (${entries.length - motionCount})`;
+  btns[3].textContent = `Labeled (${labeledCount})`;
+  btns[4].textContent = `Unlabeled (${unlabeledCatCount})`;
+  btns[5].textContent = `No motion (${entries.length - entries.filter(e => e.has_motion).length})`;
+
+  // Build filtered index list (all matching entries, not just current page)
+  filteredIndices = [];
+  entries.forEach((e, idx) => {
+    if (!shouldHide(e)) filteredIndices.push(idx);
+  });
+
+  // Pagination
+  totalPages = Math.max(1, Math.ceil(filteredIndices.length / PAGE_SIZE));
+  if (currentPage >= totalPages) currentPage = totalPages - 1;
+  const pageStart = currentPage * PAGE_SIZE;
+  const pageEnd = Math.min(pageStart + PAGE_SIZE, filteredIndices.length);
+  const pageIndices = filteredIndices.slice(pageStart, pageEnd);
+
+  renderPagination();
+
+  // Pre-compute max motion once
+  const maxMotion = Math.max(...entries.map(x => x.motion_score), 1);
 
   const grid = document.getElementById('grid');
-  const maxMotion = Math.max(...entries.map(x => x.motion_score), 1);
-  const showDesc = currentFilter === 'cat' || currentFilter === 'no-cat';
+  const showDesc = ['cat','no-cat','labeled','unlabeled'].includes(currentFilter);
   grid.className = 'grid' + (showDesc ? ' show-desc' : '');
 
-  grid.innerHTML = entries.map(e => {
-    const cls = e.has_motion ? 'thumb motion' : 'thumb';
-    const hidden = shouldHide(e) ? ' hidden' : '';
+  // Only render current page's items
+  grid.innerHTML = pageIndices.map(idx => {
+    const e = entries[idx];
+    const catLabel = labels[e.filename];
+    const isLabeled = !!catLabel;
 
-    // Border: green for cat, red-scale for unlabeled motion, gray for no motion/no cat
+    // Border color
     let borderColor = '#333';
-    if (e.cat_detected === true) {
+    if (isLabeled && catLabel.length > 0) {
+      borderColor = CAT_COLORS[catLabel[0]] || '#a78bfa';
+    } else if (e.cat_detected === true) {
       borderColor = 'rgba(34,197,94,0.8)';
-    } else if (e.cat_detected === false) {
-      borderColor = '#333';
-    } else if (e.has_motion) {
+    } else if (e.has_motion && e.cat_detected == null) {
       const intensity = Math.min(e.motion_score / (maxMotion * 0.3), 1.0);
       borderColor = `rgba(239,68,68,${intensity.toFixed(2)})`;
     }
 
-    // Badge: cat label or motion score
-    let badge = '';
-    if (e.cat_detected === true) {
-      badge = `<span class="cat-badge cat-yes">CAT</span>`;
-    } else if (e.cat_detected === false) {
-      badge = `<span class="cat-badge cat-no">--</span>`;
-    } else {
-      badge = `<span class="score">${e.motion_score.toLocaleString()}</span>`;
+    // Cat name tags (from labels)
+    let nameTags = '';
+    if (catLabel && catLabel.length > 0) {
+      nameTags = '<div class="cat-names">' +
+        catLabel.map(n => `<span class="cat-name-tag" style="background:${CAT_COLORS[n] || '#666'}">${n}</span>`).join('') +
+        '</div>';
+    } else if (catLabel && catLabel.length === 0) {
+      nameTags = '<div class="cat-names"><span class="cat-name-tag" style="background:#ef4444">无猫</span></div>';
     }
 
-    // Description below image
+    // Badge (top-right)
+    let badge = '';
+    if (!isLabeled) {
+      if (e.cat_detected === true) {
+        badge = '<span class="cat-badge cat-yes">CAT</span>';
+      } else if (e.cat_detected === false) {
+        badge = '<span class="cat-badge cat-no">--</span>';
+      } else if (e.has_motion) {
+        badge = `<span class="score">${e.motion_score.toLocaleString()}</span>`;
+      }
+    }
+
     const desc = e.cat_description
       ? `<div class="cat-desc">${e.cat_description}</div>` : '';
 
-    return `<div class="${cls}${hidden}" data-motion="${e.motion_score}" ` +
-      `data-cat="${e.cat_detected ?? ''}" style="border-color:${borderColor}">` +
-      `<a href="${e.filename}" target="_blank">` +
+    return `<div class="thumb" data-idx="${idx}" `+
+      `data-motion="${e.motion_score}" data-cat="${e.cat_detected ?? ''}" ` +
+      `style="border-color:${borderColor}" onclick="openModal(${idx})">` +
       `<img src="thumbs/${e.filename}" loading="lazy" alt="${e.filename}">` +
-      `</a>` +
       `<span class="label">${e.filename.slice(0,6)}</span>` +
-      badge + desc +
-      `</div>`;
+      nameTags + badge + desc +
+      '</div>';
   }).join('');
 }
 
+function renderPagination() {
+  if (totalPages <= 1) {
+    document.getElementById('paginationTop').innerHTML = '';
+    document.getElementById('paginationBottom').innerHTML = '';
+    return;
+  }
+  const html = buildPaginationHTML();
+  document.getElementById('paginationTop').innerHTML = html;
+  document.getElementById('paginationBottom').innerHTML = html;
+}
+
+function buildPaginationHTML() {
+  let html = `<button onclick="goPage(0)" ${currentPage === 0 ? 'disabled' : ''}>&laquo;</button>`;
+  html += `<button onclick="goPage(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>&lsaquo;</button>`;
+
+  // Show page numbers around current page
+  const range = 3;
+  let start = Math.max(0, currentPage - range);
+  let end = Math.min(totalPages - 1, currentPage + range);
+
+  if (start > 0) html += `<button onclick="goPage(0)">1</button>`;
+  if (start > 1) html += `<span class="page-info">...</span>`;
+
+  for (let i = start; i <= end; i++) {
+    html += `<button class="${i === currentPage ? 'active' : ''}" onclick="goPage(${i})">${i + 1}</button>`;
+  }
+
+  if (end < totalPages - 2) html += `<span class="page-info">...</span>`;
+  if (end < totalPages - 1) html += `<button onclick="goPage(${totalPages - 1})">${totalPages}</button>`;
+
+  html += `<button onclick="goPage(${currentPage + 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>&rsaquo;</button>`;
+  html += `<button onclick="goPage(${totalPages - 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>&raquo;</button>`;
+  html += `<span class="page-info">${filteredIndices.length} items</span>`;
+  return html;
+}
+
+function goPage(page) {
+  if (page < 0 || page >= totalPages) return;
+  currentPage = page;
+  render();
+  window.scrollTo({top: 0, behavior: 'instant'});
+}
+
 function shouldHide(e) {
+  const isLabeled = !!labels[e.filename];
   if (currentFilter === 'cat') return e.cat_detected !== true;
   if (currentFilter === 'no-cat') return e.cat_detected !== false;
-  if (currentFilter === 'unlabeled') return !(e.cat_detected == null && e.has_motion);
+  if (currentFilter === 'labeled') return !isLabeled;
+  if (currentFilter === 'unlabeled') return !(e.cat_detected === true && !isLabeled);
   if (currentFilter === 'no-motion') return e.has_motion;
   return false;
 }
 
 function filter(mode) {
   currentFilter = mode;
+  currentPage = 0;
   document.querySelectorAll('.controls > button').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
-
-  // Show descriptions below thumbnails in cat/no-cat modes
-  const grid = document.getElementById('grid');
-  grid.classList.toggle('show-desc', mode === 'cat' || mode === 'no-cat');
-
-  document.querySelectorAll('.thumb').forEach(el => {
-    const cat = el.dataset.cat;
-    const m = parseInt(el.dataset.motion);
-    if (mode === 'all') el.classList.remove('hidden');
-    else if (mode === 'cat') el.classList.toggle('hidden', cat !== 'true');
-    else if (mode === 'no-cat') el.classList.toggle('hidden', cat !== 'false');
-    else if (mode === 'unlabeled') el.classList.toggle('hidden', cat !== '' || m <= MOTION_THRESHOLD);
-    else if (mode === 'no-motion') el.classList.toggle('hidden', m > MOTION_THRESHOLD);
-  });
+  render();
 }
 
 function setSize(w) {
@@ -232,9 +440,162 @@ function setSize(w) {
   event.target.classList.add('active');
 }
 
-// Initial load + auto-refresh
-loadData();
-refreshTimer = setInterval(loadData, REFRESH_INTERVAL);
+// --- Modal / labeling ---
+
+function openModal(entryIdx) {
+  const posInFiltered = filteredIndices.indexOf(entryIdx);
+  if (posInFiltered === -1) return;
+  modalIndex = posInFiltered;
+  showModalEntry();
+  document.getElementById('modalOverlay').classList.add('open');
+  modalOpen = true;
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  modalOpen = false;
+  selectedCats.clear();
+}
+
+function showModalEntry() {
+  const entryIdx = filteredIndices[modalIndex];
+  const e = entries[entryIdx];
+  if (!e) return;
+
+  // Load full image (not thumbnail)
+  document.getElementById('modalImg').src = e.filename;
+  document.getElementById('modalFilename').textContent = e.filename;
+  document.getElementById('modalDesc').textContent = e.cat_description || '';
+  document.getElementById('modalCounter').textContent =
+    `${modalIndex + 1} / ${filteredIndices.length}`;
+
+  // Restore existing labels or start fresh
+  selectedCats.clear();
+  const existing = labels[e.filename];
+  if (existing) {
+    existing.forEach(n => selectedCats.add(n));
+  }
+
+  renderCatButtons();
+}
+
+function renderCatButtons() {
+  const wrap = document.getElementById('catButtons');
+  const noCatSelected = labels[entries[filteredIndices[modalIndex]]?.filename]?.length === 0;
+
+  wrap.innerHTML = CAT_NAMES.map((name, i) => {
+    const sel = selectedCats.has(name);
+    const bg = sel ? CAT_COLORS[name] : '';
+    const border = sel ? CAT_COLORS[name] : '#444';
+    return `<button class="cat-btn${sel ? ' selected' : ''}" ` +
+      `style="border-color:${border};${sel ? `background:${bg}` : ''}" ` +
+      `onclick="toggleCat('${name}')">${name}<span class="shortcut">${i+1}</span></button>`;
+  }).join('') +
+    `<button class="no-cat-btn${noCatSelected && selectedCats.size === 0 ? ' selected' : ''}" ` +
+    `onclick="markNoCat()">无猫<span class="shortcut" style="font-size:0.65rem;color:#666;margin-left:4px">0</span></button>`;
+}
+
+function toggleCat(name) {
+  if (selectedCats.has(name)) {
+    selectedCats.delete(name);
+  } else {
+    selectedCats.add(name);
+  }
+  renderCatButtons();
+}
+
+function markNoCat() {
+  selectedCats.clear();
+  // Save immediately as empty array (explicit "no cat")
+  const entryIdx = filteredIndices[modalIndex];
+  const e = entries[entryIdx];
+  labels[e.filename] = [];
+  saveLabelToServer(e.filename, []);
+  renderCatButtons();
+  render();
+  // Move to next
+  if (modalIndex < filteredIndices.length - 1) {
+    modalIndex++;
+    showModalEntry();
+  }
+}
+
+async function saveLabel() {
+  if (selectedCats.size === 0) return;
+  const entryIdx = filteredIndices[modalIndex];
+  const e = entries[entryIdx];
+  const cats = [...selectedCats];
+  labels[e.filename] = cats;
+  await saveLabelToServer(e.filename, cats);
+  render();
+
+  // Auto-advance to next unlabeled in filtered view
+  let nextIdx = -1;
+  for (let i = modalIndex + 1; i < filteredIndices.length; i++) {
+    const nextEntry = entries[filteredIndices[i]];
+    if (!labels[nextEntry.filename]) { nextIdx = i; break; }
+  }
+  // If no more unlabeled, just go to next
+  if (nextIdx === -1 && modalIndex < filteredIndices.length - 1) {
+    nextIdx = modalIndex + 1;
+  }
+  if (nextIdx >= 0) {
+    modalIndex = nextIdx;
+    // Switch page if needed
+    const targetPage = Math.floor(nextIdx / PAGE_SIZE);
+    if (targetPage !== currentPage) { currentPage = targetPage; render(); }
+    showModalEntry();
+  }
+}
+
+async function saveLabelToServer(filename, cats) {
+  try {
+    await fetch('/api/labels', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({date: dateDir, filename, cats}),
+    });
+  } catch (e) {
+    console.error('Failed to save label:', e);
+  }
+}
+
+function navModal(dir) {
+  const newIdx = modalIndex + dir;
+  if (newIdx >= 0 && newIdx < filteredIndices.length) {
+    modalIndex = newIdx;
+    // Auto-switch page if navigating beyond current page
+    const targetPage = Math.floor(newIdx / PAGE_SIZE);
+    if (targetPage !== currentPage) {
+      currentPage = targetPage;
+      render();
+    }
+    showModalEntry();
+  }
+}
+
+// --- Keyboard shortcuts ---
+
+document.addEventListener('keydown', e => {
+  if (!modalOpen) return;
+  if (e.key === 'Escape') { closeModal(); return; }
+  if (e.key === 'Enter') { saveLabel(); return; }
+  if (e.key === 'ArrowLeft') { navModal(-1); return; }
+  if (e.key === 'ArrowRight') { navModal(1); return; }
+  // 1-5 toggle cats
+  const num = parseInt(e.key);
+  if (num >= 1 && num <= 5) { toggleCat(CAT_NAMES[num - 1]); return; }
+  if (e.key === '0') { markNoCat(); return; }
+});
+
+// --- Init ---
+
+async function init() {
+  await loadLabels();
+  await loadData();
+  refreshTimer = setInterval(loadData, REFRESH_INTERVAL);
+}
+init();
 </script>
 </body>
 </html>

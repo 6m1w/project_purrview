@@ -15,9 +15,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from collections import defaultdict
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -30,15 +32,26 @@ from .label import _load_api_key
 
 # --- Structured output schema ---
 
+class Activity(str, Enum):
+    EATING = "eating"
+    DRINKING = "drinking"
+    PRESENT = "present"
+
+
+class CatActivity(BaseModel):
+    """Per-cat identification with activity classification."""
+    name: str = Field(description="Cat name (from known cats only)")
+    activity: Activity = Field(description="What this cat is doing")
+
+
 class IdentifyResult(BaseModel):
     """Gemini response for cat identification in a single frame."""
     cats_present: bool = Field(description="Whether one or more cats are visible")
-    cat_names: list[str] = Field(
+    cats: list[CatActivity] = Field(
         default_factory=list,
-        description="Names of cats identified (from known cats only)",
+        description="Per-cat identification with activity",
     )
-    cat_count: int = Field(0, description="Number of cats visible")
-    description: Optional[str] = Field(None, description="Brief description of what cats are doing")
+    description: Optional[str] = Field(None, description="Brief description of the scene")
     confidence: float = Field(0.0, ge=0.0, le=1.0, description="Overall identification confidence")
 
 
@@ -56,6 +69,14 @@ CAT_DESCRIPTIONS: dict[str, str] = {
 }
 
 REFS_PER_CAT = 3
+
+# Keywords for parsing activity from cat_description text
+_DRINKING_PATTERN = re.compile(
+    r"drink|water dispenser|water fountain|water bowl", re.IGNORECASE
+)
+_EATING_PATTERN = re.compile(
+    r"\beat|eating|eats|food bowl", re.IGNORECASE
+)
 
 
 # --- Reference photo selection ---
@@ -105,6 +126,84 @@ def select_references(
     return refs
 
 
+# --- Activity pseudo-labels ---
+
+def parse_activity_labels(
+    labels: dict[str, list[str]],
+    meta_by_file: dict[str, dict],
+) -> dict[str, dict[str, str]]:
+    """Parse activity pseudo-labels from cat_description in gallery_meta.
+
+    For single-cat frames, the whole description maps to that cat's activity.
+    For multi-cat frames, try to match per-cat mentions in the description;
+    fall back to frame-level activity if per-cat parsing fails.
+
+    Returns:
+        {filename: {cat_name: activity_str}} where activity is eating/drinking/present
+    """
+    result: dict[str, dict[str, str]] = {}
+
+    for fname, cats in labels.items():
+        desc = (meta_by_file.get(fname, {}).get("cat_description") or "").lower()
+        if not desc:
+            # No description — default all cats to "present"
+            result[fname] = {c: "present" for c in cats}
+            continue
+
+        if len(cats) == 1:
+            # Single cat: classify from whole description
+            result[fname] = {cats[0]: _classify_text(desc)}
+        else:
+            # Multi-cat: try per-cat parsing from description sentences
+            per_cat = _parse_multi_cat_activity(desc, cats)
+            result[fname] = per_cat
+
+    return result
+
+
+def _classify_text(text: str) -> str:
+    """Classify activity from description text."""
+    if _DRINKING_PATTERN.search(text):
+        return "drinking"
+    if _EATING_PATTERN.search(text):
+        return "eating"
+    return "present"
+
+
+def _parse_multi_cat_activity(desc: str, cats: list[str]) -> dict[str, str]:
+    """Parse per-cat activity from a multi-cat description.
+
+    Looks for cat color/type mentions near activity keywords.
+    Falls back to frame-level classification if parsing fails.
+    """
+    # Color/type hints for matching description text to cat names
+    cat_hints: dict[str, list[str]] = {
+        "大吉": ["orange", "ginger", "light-colored", "light brown", "light orange"],
+        "小慢": ["calico"],
+        "小黑": ["black", "dark-colored", "dark cat"],
+        "麻酱": ["tortoiseshell", "darker cat"],
+        "松花": ["tabby", "striped", "brown tabby"],
+    }
+
+    activities: dict[str, str] = {}
+    # Split into sentence-like segments
+    segments = re.split(r"[.;,]|(?:and )", desc)
+
+    for cat in cats:
+        hints = cat_hints.get(cat, [])
+        # Find segments mentioning this cat
+        cat_segments = [s for s in segments if any(h in s for h in hints)]
+        if cat_segments:
+            # Classify from cat-specific text
+            combined = " ".join(cat_segments)
+            activities[cat] = _classify_text(combined)
+        else:
+            # Fall back to whole description
+            activities[cat] = _classify_text(desc)
+
+    return activities
+
+
 # --- Prompt building ---
 
 def build_identify_prompt(
@@ -120,12 +219,17 @@ def build_identify_prompt(
     parts: list = []
 
     parts.append(
-        "You are a cat identification system. A fixed camera monitors cat food bowls. "
+        "You are a cat identification system. A fixed camera monitors a feeding area. "
+        "The layout from left to right: water dispenser (white round device) → 3 food bowls with kibble. "
         "There are 5 known cats. Identify which cat(s) appear in the test image.\n\n"
         "Rules:\n"
         "- Only return names from the list below\n"
         "- A frame may have 0, 1, or multiple cats\n"
-        "- Check edges of the image for partially visible cats\n\n"
+        "- Check edges of the image for partially visible cats\n"
+        "- For each cat, classify their activity:\n"
+        '  - "eating" if eating from a food bowl (center/right bowls)\n'
+        '  - "drinking" if drinking from the water dispenser (white round device on the left)\n'
+        '  - "present" if visible but not eating or drinking (sitting, walking, looking)\n\n'
         "Known cats and their reference photos:\n"
     )
 
@@ -178,8 +282,18 @@ def evaluate(
                 entry = json.loads(line)
                 meta_by_file[entry["filename"]] = entry
 
+    # Parse activity pseudo-labels from descriptions
+    activity_labels = parse_activity_labels(labels, meta_by_file)
+
     print(f"[eval] Date: {date}")
     print(f"[eval] Labels: {len(labels)} frames, Meta: {len(meta_by_file)} frames")
+
+    # Show activity distribution
+    act_counts: dict[str, int] = defaultdict(int)
+    for acts in activity_labels.values():
+        for act in acts.values():
+            act_counts[act] += 1
+    print(f"[eval] Activity labels: {dict(act_counts)}")
 
     # Step 1: Select reference photos
     refs = select_references(labels, meta_by_file, date_dir)
@@ -210,10 +324,14 @@ def evaluate(
         print("[eval] Dry run — skipping API calls")
         # Show test set distribution
         cat_dist: dict[str, int] = defaultdict(int)
-        for _, cats in test_frames:
+        test_act_dist: dict[str, int] = defaultdict(int)
+        for fname, cats in test_frames:
             for c in cats:
                 cat_dist[c] += 1
-        print(f"[eval] Test set distribution: {dict(cat_dist)}")
+            for act in activity_labels.get(fname, {}).values():
+                test_act_dist[act] += 1
+        print(f"[eval] Test set cat distribution: {dict(cat_dist)}")
+        print(f"[eval] Test set activity distribution: {dict(test_act_dist)}")
         return
 
     # Load reference images into memory
@@ -252,8 +370,11 @@ def evaluate(
             )
             result = IdentifyResult.model_validate_json(response.text)
 
-            pred_names = set(result.cat_names)
+            # Extract cat names and activities from structured response
+            pred_names = {ca.name for ca in result.cats}
+            pred_activities = {ca.name: ca.activity.value for ca in result.cats}
             truth_set = set(truth_cats)
+            truth_activities = activity_labels.get(fname, {})
             match = pred_names == truth_set
 
             tag = "OK" if match else "XX"
@@ -263,14 +384,23 @@ def evaluate(
                 "pred": sorted(pred_names),
                 "match": match,
                 "confidence": result.confidence,
+                "truth_activities": truth_activities,
+                "pred_activities": pred_activities,
             })
 
             truth_str = ",".join(sorted(truth_set))
             pred_str = ",".join(sorted(pred_names)) or "(none)"
+            # Show activity for correctly identified cats
+            act_detail = ""
+            for cat in sorted(pred_names & truth_set):
+                ta = truth_activities.get(cat, "?")
+                pa = pred_activities.get(cat, "?")
+                act_tag = "=" if ta == pa else "!"
+                act_detail += f" {cat}:{pa}({act_tag})"
             print(
                 f"  [{i+1}/{len(test_frames)}] {tag} {fname}  "
                 f"truth=[{truth_str}] pred=[{pred_str}] "
-                f"conf={result.confidence:.0%}"
+                f"conf={result.confidence:.0%}{act_detail}"
             )
 
         except Exception as exc:
@@ -282,11 +412,12 @@ def evaluate(
         time.sleep(0.3)
 
     # Step 4: Print summary
-    _print_summary(results, errors)
+    _print_id_summary(results, errors)
+    _print_activity_summary(results)
 
 
-def _print_summary(results: list[dict], errors: int) -> None:
-    """Print evaluation summary with per-cat precision/recall."""
+def _print_id_summary(results: list[dict], errors: int) -> None:
+    """Print cat identification summary with per-cat precision/recall."""
     if not results:
         print("\n[eval] No results to summarize")
         return
@@ -348,6 +479,73 @@ def _print_summary(results: list[dict], errors: int) -> None:
         print(f"\n[eval] Top confusion pairs (truth -> pred):")
         for (t, p), count in sorted(confusion.items(), key=lambda x: -x[1])[:10]:
             print(f"  {t} -> {p}: {count}x")
+
+
+def _print_activity_summary(results: list[dict]) -> None:
+    """Print activity classification summary with confusion matrix.
+
+    Only evaluates activity for cats that were correctly identified
+    (both in truth and prediction), so activity accuracy is independent
+    of cat ID accuracy.
+    """
+    if not results:
+        return
+
+    activity_types = ["eating", "drinking", "present"]
+
+    # Collect (truth_activity, pred_activity) pairs for correctly ID'd cats
+    pairs: list[tuple[str, str]] = []
+    for r in results:
+        truth_acts: dict[str, str] = r.get("truth_activities", {})
+        pred_acts: dict[str, str] = r.get("pred_activities", {})
+        # Only compare cats present in both truth and prediction
+        for cat in set(r["truth"]) & set(r["pred"]):
+            ta = truth_acts.get(cat)
+            pa = pred_acts.get(cat)
+            if ta and pa:
+                pairs.append((ta, pa))
+
+    if not pairs:
+        print("\n[eval] No activity pairs to evaluate")
+        return
+
+    correct = sum(1 for t, p in pairs if t == p)
+    total = len(pairs)
+
+    print(f"\n{'='*60}")
+    print(f"[eval] ACTIVITY: {correct}/{total} correct ({correct/total:.1%})")
+
+    # Per-activity precision/recall
+    tp: dict[str, int] = defaultdict(int)
+    fp: dict[str, int] = defaultdict(int)
+    fn: dict[str, int] = defaultdict(int)
+    for t, p in pairs:
+        if t == p:
+            tp[t] += 1
+        else:
+            fp[p] += 1
+            fn[t] += 1
+
+    print(f"\n{'Activity':<10} {'Prec':>6} {'Recall':>6} {'F1':>6} {'TP':>4} {'FP':>4} {'FN':>4}")
+    print("-" * 50)
+    for act in activity_types:
+        p = tp[act] / (tp[act] + fp[act]) if (tp[act] + fp[act]) > 0 else 0
+        r = tp[act] / (tp[act] + fn[act]) if (tp[act] + fn[act]) > 0 else 0
+        f1 = 2 * p * r / (p + r) if (p + r) > 0 else 0
+        print(f"{act:<10} {p:>5.0%} {r:>6.0%} {f1:>6.0%} {tp[act]:>4} {fp[act]:>4} {fn[act]:>4}")
+
+    # Confusion matrix
+    matrix: dict[str, dict[str, int]] = {a: defaultdict(int) for a in activity_types}
+    for t, p in pairs:
+        if t in matrix:
+            matrix[t][p] += 1
+
+    print(f"\n[eval] Activity confusion matrix (rows=truth, cols=pred):")
+    header = f"{'':>10}" + "".join(f"{a:>10}" for a in activity_types)
+    print(header)
+    for t in activity_types:
+        row = f"{t:>10}" + "".join(f"{matrix[t][p]:>10}" for p in activity_types)
+        print(row)
 
 
 def main() -> None:

@@ -46,12 +46,21 @@ class IdentifyResult(BaseModel):
 CAT_NAMES = ["大吉", "小慢", "小黑", "麻酱", "松花"]
 
 CAT_DESCRIPTIONS: dict[str, str] = {
-    "大吉": "Orange/ginger cat with white patches. Light-colored, medium-large build.",
-    "小慢": "Calico cat with distinct patches of orange, black and white. Medium build.",
-    "小黑": "Solid black cat. Sleek, medium build.",
-    "麻酱": "Tortoiseshell cat with a dark mix of black and brown/amber mottled pattern. No stripes.",
-    "松花": "Brown tabby cat with visible dark stripes/mackerel pattern. Lighter than 麻酱.",
+    "大吉": "Orange/ginger tabby with white patches on belly/paws. Lightest-colored cat, medium-large build.",
+    "小慢": "Calico with distinct large patches of orange, black, and white. Medium build.",
+    "小黑": "Solid black cat. Sleek, medium build. Darkest cat — no brown or orange tones.",
+    "麻酱": (
+        "Tortoiseshell cat with irregular patches of black and bright orange/ginger. "
+        "NO clear stripes — mottled patchwork pattern. Slightly fluffier coat."
+    ),
+    "松花": (
+        "Brown tabby with clear dark stripes (mackerel pattern) on a lighter brown/tan base. "
+        "Distinct parallel stripes visible on back and sides. Sleeker, short fur."
+    ),
 }
+
+# 松花 and 麻酱 are the most commonly confused pair.
+# Key difference: 松花 has STRIPES on brown base; 麻酱 has PATCHES of black+orange, no stripes.
 
 
 # --- Reference photo loading ---
@@ -106,6 +115,10 @@ def build_identify_prompt(
         '  - "eating" if eating from a food bowl (center/right bowls)\n'
         '  - "drinking" if drinking from the water dispenser (white round device on the left)\n'
         '  - "present" if visible but not eating or drinking (sitting, walking, looking)\n\n'
+        "CONFUSION WARNING: 松花 and 麻酱 look similar from above but differ in pattern:\n"
+        "- 松花 has STRIPES (parallel dark lines on brown/tan base)\n"
+        "- 麻酱 has PATCHES (irregular blocks of black and orange, NO stripes)\n"
+        "Look carefully at the fur pattern before deciding between these two.\n\n"
         "Known cats and their reference photos:\n"
     )
 

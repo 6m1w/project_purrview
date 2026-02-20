@@ -15,7 +15,7 @@ _ENV_FILE = _PROJECT_ROOT / ".env"
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8", "extra": "ignore"}
 
     # Supabase
     supabase_url: str = Field(..., description="Supabase project URL")

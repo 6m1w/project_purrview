@@ -17,6 +17,8 @@ from pathlib import Path
 
 from .analyzer import CatAnalyzer
 from .label import _load_api_key
+from .notifier import LarkNotifier
+from .storage import PurrviewStorage
 from .tracker import SessionTracker, FeedingSession
 
 
@@ -28,6 +30,8 @@ def replay(
     idle_timeout: int = 60,
     cooldown: int = 30,
     model: str = "gemini-2.5-flash",
+    save: bool = False,
+    notify: bool = False,
 ) -> None:
     """Replay captured frames through analyzer + tracker."""
     date_dir = Path(output_dir) / date
@@ -53,15 +57,34 @@ def replay(
         entries = entries[:limit]
         print(f"[replay] Limited to {limit} frames")
 
-    # Init analyzer + tracker
+    # Init components
     api_key = _load_api_key()
     analyzer = CatAnalyzer(api_key=api_key, refs_dir=Path(refs_dir), model=model)
     tracker = SessionTracker(idle_timeout=idle_timeout)
+    storage = PurrviewStorage() if save else None
+    notifier = LarkNotifier() if notify else None
+
+    if save:
+        print("[replay] Supabase writes ENABLED")
+    if notify:
+        print(f"[replay] Lark notifications {'ENABLED' if notifier.enabled else 'DISABLED (no webhook)'}")
 
     all_completed: list[FeedingSession] = []
     last_call_ts = 0.0
     errors = 0
     calls = 0
+
+    def _on_session_complete(s: FeedingSession, tag: str) -> None:
+        """Handle a completed session: print, optionally save + notify."""
+        _print_session(s, tag=tag)
+        if storage:
+            try:
+                eid = storage.save_session(s)
+                print(f"    -> saved to Supabase: {eid}")
+            except Exception as exc:
+                print(f"    -> Supabase save FAILED: {exc}")
+        if notifier:
+            notifier.send_feeding_alert(s)
 
     for i, entry in enumerate(entries):
         fname = entry["filename"]
@@ -76,7 +99,7 @@ def replay(
         completed = tracker.check_idle(now=ts)
         all_completed.extend(completed)
         for s in completed:
-            _print_session(s, tag="END")
+            _on_session_complete(s, tag="END")
 
         # Apply cooldown (based on frame timestamps)
         if (ts - last_call_ts) < cooldown:
@@ -96,7 +119,7 @@ def replay(
             )
             all_completed.extend(completed)
             for s in completed:
-                _print_session(s, tag="SWITCH")
+                _on_session_complete(s, tag="SWITCH")
 
         except Exception as exc:
             errors += 1
@@ -108,7 +131,7 @@ def replay(
     final = tracker.check_idle(now=float("inf"))
     all_completed.extend(final)
     for s in final:
-        _print_session(s, tag="FLUSH")
+        _on_session_complete(s, tag="FLUSH")
 
     # Summary
     print(f"\n{'='*60}")
@@ -141,8 +164,14 @@ def main() -> None:
     parser.add_argument("--idle-timeout", type=int, default=60, help="Session idle timeout (seconds)")
     parser.add_argument("--cooldown", type=int, default=30, help="Seconds between Gemini calls")
     parser.add_argument("--model", default="gemini-2.5-flash", help="Gemini model")
+    parser.add_argument("--save", action="store_true", help="Write sessions to Supabase")
+    parser.add_argument("--notify", action="store_true", help="Send Lark notifications")
     args = parser.parse_args()
-    replay(args.date, args.output, args.refs, args.limit, args.idle_timeout, args.cooldown, args.model)
+    replay(
+        args.date, args.output, args.refs, args.limit,
+        args.idle_timeout, args.cooldown, args.model,
+        save=args.save, notify=args.notify,
+    )
 
 
 if __name__ == "__main__":

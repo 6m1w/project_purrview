@@ -1,20 +1,20 @@
-"""PurrView worker entry point - orchestrates capture → detect → analyze → store."""
+"""PurrView worker entry point — capture → motion → analyze → track → store."""
 
 from __future__ import annotations
 
 import time
-from datetime import datetime, timezone
+from pathlib import Path
 
 import cv2
 import numpy as np
 
 from .analyzer import CatAnalyzer
 from .capture import capture_frames
-from .config import ROI, get_settings
-from .detector import MotionDetector
+from .collect import compute_motion_score
+from .config import get_settings
 from .notifier import LarkNotifier
 from .storage import PurrviewStorage
-from .tracker import FeedingTracker
+from .tracker import FeedingSession, SessionTracker
 
 
 def encode_frame_jpeg(frame: np.ndarray, quality: int = 85) -> bytes:
@@ -23,93 +23,91 @@ def encode_frame_jpeg(frame: np.ndarray, quality: int = 85) -> bytes:
     return buf.tobytes()
 
 
+def _handle_completed(
+    session: FeedingSession,
+    storage: PurrviewStorage,
+    notifier: LarkNotifier,
+) -> None:
+    """Save a completed session to Supabase and send a Lark notification."""
+    duration = session.last_seen_at - session.started_at
+    print(
+        f"[main] Session complete: {session.cat_name} {session.activity} "
+        f"({duration:.0f}s, {len(session.frames)} frames)"
+    )
+    try:
+        event_id = storage.save_session(session)
+        print(f"[main] Saved event {event_id}")
+    except Exception as e:
+        print(f"[main] Failed to save session: {e}")
+
+    notifier.send_feeding_alert(session)
+
+
 def run() -> None:
     """Main processing loop."""
     print("[main] PurrView worker starting...")
 
-    storage = PurrviewStorage()
-    analyzer = CatAnalyzer()
-    notifier = LarkNotifier()
     cfg = get_settings()
-    tracker = FeedingTracker(idle_timeout=cfg.idle_timeout)
+    storage = PurrviewStorage()
+    analyzer = CatAnalyzer(
+        api_key=cfg.gemini_api_key,
+        refs_dir=Path(cfg.refs_dir),
+        model=cfg.gemini_model,
+    )
+    notifier = LarkNotifier()
+    tracker = SessionTracker(idle_timeout=cfg.idle_timeout)
 
     if notifier.enabled:
         print("[main] Lark notifications enabled")
     else:
         print("[main] Lark notifications disabled (no webhook URL)")
 
-    # Load bowl configs
-    bowls = storage.get_active_bowls()
-    if not bowls:
-        print("[main] No active food bowls configured. Exiting.")
-        return
+    print(
+        f"[main] Config: motion_threshold={cfg.motion_threshold}, "
+        f"cooldown={cfg.motion_cooldown}s, idle_timeout={cfg.idle_timeout}s"
+    )
 
-    bowl_rois: dict[str, ROI] = {}
-    detectors: dict[str, MotionDetector] = {}
-    for bowl in bowls:
-        bowl_id = bowl["id"]
-        bowl_rois[bowl_id] = ROI(bowl["roi_x1"], bowl["roi_y1"], bowl["roi_x2"], bowl["roi_y2"])
-        detectors[bowl_id] = MotionDetector()
+    prev_frame: np.ndarray | None = None
+    last_gemini_call: float = 0
 
-    print(f"[main] Monitoring {len(bowls)} bowl(s): {[b['id'] for b in bowls]}")
-
-    # Load cat profiles for Gemini context
-    cat_profiles = storage.get_cat_profiles()
-    print(f"[main] Loaded {len(cat_profiles)} cat profile(s)")
-
-    # Track last Gemini call time per bowl (cooldown)
-    last_gemini_call: dict[str, float] = {}
-
-    # Main loop
     for frame in capture_frames(cfg.rtmp_url):
         now = time.time()
 
-        for bowl_id, roi in bowl_rois.items():
-            motion_detected, pixel_count = detectors[bowl_id].detect(frame, roi)
+        # 1. Simple frame-diff motion detection
+        motion_score = compute_motion_score(frame, prev_frame)
+        prev_frame = frame.copy()
 
-            if motion_detected:
-                tracker.on_motion(bowl_id)
+        if motion_score > cfg.motion_threshold:
+            # 2. Gemini cooldown check
+            if (now - last_gemini_call) >= cfg.motion_cooldown:
+                last_gemini_call = now
+                frame_bytes = encode_frame_jpeg(frame)
 
-                # Check cooldown before calling Gemini
-                last_call = last_gemini_call.get(bowl_id, 0)
-                if (now - last_call) >= cfg.motion_cooldown:
-                    last_gemini_call[bowl_id] = now
-                    frame_bytes = encode_frame_jpeg(frame)
-                    bowl_name = next(
-                        (b["name"] for b in bowls if b["id"] == bowl_id),
-                        bowl_id,
-                    )
+                try:
+                    result = analyzer.analyze_frame(frame_bytes)
+                    if result.cats_present:
+                        frame_info = {"timestamp": now}
+                        completed = tracker.on_analysis(result, now, frame_info)
+                        for session in completed:
+                            _handle_completed(session, storage, notifier)
 
-                    try:
-                        analysis = analyzer.analyze_frame(
-                            frame_bytes, cat_profiles, bowl_name
+                        cats = ", ".join(
+                            f"{c.name}({c.activity.value})" for c in result.cats
                         )
-                        tracker.on_analysis(bowl_id, analysis)
                         print(
-                            f"[main] Bowl {bowl_id}: "
-                            f"cat={analysis.cat_name}, eating={analysis.is_eating}, "
-                            f"food={analysis.food_level}, conf={analysis.confidence:.2f}"
+                            f"[main] Gemini: {cats} "
+                            f"(conf={result.confidence:.2f}, motion={motion_score})"
                         )
-                    except Exception as e:
-                        print(f"[main] Gemini error for bowl {bowl_id}: {e}")
+                    else:
+                        print(f"[main] Gemini: no cats (motion={motion_score})")
 
-        # Check for completed feeding events
-        completed = tracker.check_idle()
-        for bowl_id, event in completed:
-            print(f"[main] Feeding event completed at bowl {bowl_id}: cat={event.cat_name}")
-            try:
-                cat_id = storage.resolve_cat_id(event.cat_name)
-                event_id = storage.save_feeding_event(event, cat_id)
-                print(f"[main] Saved event {event_id}")
+                except Exception as e:
+                    print(f"[main] Gemini error: {e}")
 
-                # Send Lark notification
-                bowl_name = next(
-                    (b["name"] for b in bowls if b["id"] == bowl_id),
-                    bowl_id,
-                )
-                notifier.send_feeding_alert(event, bowl_name=bowl_name)
-            except Exception as e:
-                print(f"[main] Failed to save event: {e}")
+        # 3. Check for idle sessions
+        completed = tracker.check_idle(now)
+        for session in completed:
+            _handle_completed(session, storage, notifier)
 
 
 if __name__ == "__main__":

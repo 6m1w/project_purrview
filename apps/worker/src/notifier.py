@@ -27,6 +27,7 @@ class LarkNotifier:
     def send_feeding_alert(
         self,
         session: FeedingSession,
+        image_url: Optional[str] = None,
     ) -> bool:
         """Send a real-time feeding alert card to Lark."""
         if not self.enabled:
@@ -41,6 +42,64 @@ class LarkNotifier:
         emoji = "💧" if activity == "drinking" else "🍽️"
         verb = "drank water" if activity == "drinking" else "ate"
 
+        elements: list[dict] = []
+        elements.extend([
+            {
+                "tag": "div",
+                "fields": [
+                    {
+                        "is_short": True,
+                        "text": {"tag": "lark_md", "content": f"**Cat**\n{cat}"},
+                    },
+                    {
+                        "is_short": True,
+                        "text": {"tag": "lark_md", "content": f"**Activity**\n{activity}"},
+                    },
+                ],
+            },
+            {
+                "tag": "div",
+                "fields": [
+                    {
+                        "is_short": True,
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**Duration**\n{duration:.1f} min",
+                        },
+                    },
+                    {
+                        "is_short": True,
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**Frames**\n{len(session.frames)}",
+                        },
+                    },
+                ],
+            },
+            {"tag": "hr"},
+        ])
+
+        # Image link (if available)
+        if image_url:
+            elements.append({
+                "tag": "action",
+                "actions": [
+                    {
+                        "tag": "button",
+                        "text": {"tag": "plain_text", "content": "📷 View Photo"},
+                        "type": "primary",
+                        "url": image_url,
+                    },
+                ],
+            })
+
+        elements.append({
+            "tag": "note",
+            "elements": [
+                {"tag": "plain_text", "content": time_range},
+            ],
+        })
+
         card = {
             "msg_type": "interactive",
             "card": {
@@ -48,47 +107,7 @@ class LarkNotifier:
                     "template": "green" if activity == "eating" else "blue",
                     "title": {"tag": "plain_text", "content": f"{emoji} {cat} just {verb}!"},
                 },
-                "elements": [
-                    {
-                        "tag": "div",
-                        "fields": [
-                            {
-                                "is_short": True,
-                                "text": {"tag": "lark_md", "content": f"**Cat**\n{cat}"},
-                            },
-                            {
-                                "is_short": True,
-                                "text": {"tag": "lark_md", "content": f"**Activity**\n{activity}"},
-                            },
-                        ],
-                    },
-                    {
-                        "tag": "div",
-                        "fields": [
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": f"**Duration**\n{duration:.1f} min",
-                                },
-                            },
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": f"**Frames**\n{len(session.frames)}",
-                                },
-                            },
-                        ],
-                    },
-                    {"tag": "hr"},
-                    {
-                        "tag": "note",
-                        "elements": [
-                            {"tag": "plain_text", "content": time_range},
-                        ],
-                    },
-                ],
+                "elements": elements,
             },
         }
         return self._post_to_lark(card)

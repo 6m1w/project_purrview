@@ -38,7 +38,27 @@ class TestHandleCompleted:
         _handle_completed(session, storage, notifier)
 
         storage.save_session.assert_called_once_with(session)
-        notifier.send_feeding_alert.assert_called_once_with(session)
+        notifier.send_feeding_alert.assert_called_once_with(session, image_url=None)
+
+    def test_saves_and_uploads_frame(self):
+        session = FeedingSession(
+            cat_name="大吉",
+            activity="eating",
+            started_at=1000.0,
+            last_seen_at=1300.0,
+            frames=[{"timestamp": 1000.0, "frame_bytes": b"jpeg-data"}],
+        )
+        storage = MagicMock()
+        storage.save_session.return_value = "event-uuid"
+        storage.upload_frame.return_value = "https://example.com/frame.jpg"
+        notifier = MagicMock()
+
+        _handle_completed(session, storage, notifier)
+
+        storage.upload_frame.assert_called_once_with(b"jpeg-data", "event-uuid")
+        notifier.send_feeding_alert.assert_called_once_with(
+            session, image_url="https://example.com/frame.jpg"
+        )
 
     def test_notifies_even_if_storage_fails(self):
         session = FeedingSession(
@@ -53,8 +73,8 @@ class TestHandleCompleted:
 
         _handle_completed(session, storage, notifier)
 
-        # Notification still sent even when storage fails
-        notifier.send_feeding_alert.assert_called_once_with(session)
+        # Notification still sent even when storage fails (no image)
+        notifier.send_feeding_alert.assert_called_once_with(session, image_url=None)
 
     def test_prints_session_info(self, capsys):
         session = FeedingSession(

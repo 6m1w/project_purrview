@@ -23,6 +23,20 @@ def encode_frame_jpeg(frame: np.ndarray, quality: int = 85) -> bytes:
     return buf.tobytes()
 
 
+def _upload_first_frame(session: FeedingSession, storage: PurrviewStorage, event_id: str) -> str | None:
+    """Upload the first captured frame of a session to Supabase Storage."""
+    for f in session.frames:
+        if f.get("frame_bytes"):
+            try:
+                url = storage.upload_frame(f["frame_bytes"], event_id)
+                print(f"[main] Uploaded frame -> {url[:80]}...")
+                return url
+            except Exception as e:
+                print(f"[main] Frame upload failed: {e}")
+                return None
+    return None
+
+
 def _handle_completed(
     session: FeedingSession,
     storage: PurrviewStorage,
@@ -34,13 +48,16 @@ def _handle_completed(
         f"[main] Session complete: {session.cat_name} {session.activity} "
         f"({duration:.0f}s, {len(session.frames)} frames)"
     )
+    event_id = None
+    image_url = None
     try:
         event_id = storage.save_session(session)
         print(f"[main] Saved event {event_id}")
+        image_url = _upload_first_frame(session, storage, event_id)
     except Exception as e:
         print(f"[main] Failed to save session: {e}")
 
-    notifier.send_feeding_alert(session)
+    notifier.send_feeding_alert(session, image_url=image_url)
 
 
 def run() -> None:
@@ -86,7 +103,7 @@ def run() -> None:
                 try:
                     result = analyzer.analyze_frame(frame_bytes)
                     if result.cats_present:
-                        frame_info = {"timestamp": now}
+                        frame_info = {"timestamp": now, "frame_bytes": frame_bytes}
                         completed = tracker.on_analysis(result, now, frame_info)
                         for session in completed:
                             _handle_completed(session, storage, notifier)

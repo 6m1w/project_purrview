@@ -57,7 +57,7 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 | 表名 | 说明 |
 |------|------|
 | `purrview_cats` | 猫咪资料（名称、描述、参考照片 URL） |
-| `purrview_feeding_events` | 进食/饮水事件（关联猫，记录类型 `event_type` [food/water]、量变化 `amount`、持续时间） |
+| `purrview_feeding_events` | 进食/饮水 session（cat_name, activity [eating/drinking], started_at, ended_at, duration_seconds） |
 | `purrview_frames` | 关键帧（关联进食事件，存储 Gemini 原始分析） |
 | `purrview_food_bowls` | 食盆 ROI 配置（坐标、名称、激活状态） |
 
@@ -87,15 +87,23 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] 活动分类评估：eating/drinking/present（73.7% baseline）
 - [ ] ~~标定食盆 ROI 坐标~~ → 延后，Gemini 直接从全帧识别即可
 
-### Phase 4：端到端 Pipeline 打通 ⬅️ 当前
-- [ ] 实时分析：analyzer.py 接入 Gemini（IdentifyResult schema + 30s cooldown）
-- [ ] Session 追踪：tracker.py 实现 per-cat 状态机（eating/drinking/present → session start/end）
-- [ ] 事件存储：storage.py 写入 Supabase（purrview_feeding_events 加 activity 字段）
-- [ ] 关键帧上传到 Supabase Storage
-- [ ] main.py 整合：capture → motion gate → Gemini → tracker → storage
-- [ ] Lark 通知接入真实事件
-- [ ] EC2 本地数据 7-day rolling 自动清理（cron）
-- [ ] EC2 上跑完整 worker（main.py）
+### Phase 4：端到端 Pipeline 打通 ✅
+- [x] 实时分析：analyzer.py 接入 Gemini（IdentifyResult schema + 30s cooldown）
+- [x] Session 追踪：tracker.py 实现 per-cat 状态机（eating/drinking/present → session start/end）
+- [x] DB migration：purrview_feeding_events 加 activity/cat_name/duration_seconds 字段
+- [x] 事件存储：storage.py 写入 Supabase（save_session + upload_frame）
+- [x] main.py 整合：capture → frame-diff motion → Gemini → tracker → storage
+- [x] Lark 实时通知：每个 session 结束发送卡片（含 View Photo 按钮）
+- [x] EC2 本地数据 7-day rolling 自动清理（cron 每天 03:00 UTC）
+- [x] EC2 上跑完整 worker（ec2-worker.sh start/stop/status）
+- [x] replay.py --save/--notify：离线验证 Supabase 写入 + Lark 通知
+
+### Phase 4.5：每日 Digest + 异常检测 ⬅️ 当前
+- [ ] 每日 digest 脚本：查 Supabase 统计昨天每只猫的进食/饮水次数
+- [ ] 对比 7 日均值，标注异常（🚨 0 次进食且均值 >= 1）
+- [ ] 每天 08:00 (UTC+8) / 00:00 UTC 发送 Lark digest 卡片
+- [ ] cron 定时任务
+- [ ] 阈值可配置（第一周只统计不告警，第二周启用 🚨 红色告警）
 
 ### Phase 5：Web 仪表板
 - [ ] 总览页：今日指标 + 趋势图
@@ -106,5 +114,4 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 ### Phase 6：生产部署 + 监控
 - [ ] Worker Docker 化部署到 EC2
 - [ ] Web 部署到 Vercel
-- [ ] 健康异常告警（猫 24h 未进食）
 - [ ] 监控：Worker 心跳、Gemini 调用量/成本

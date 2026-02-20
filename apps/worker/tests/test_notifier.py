@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.notifier import LarkNotifier
-from src.tracker import FeedingEvent
+from src.tracker import FeedingSession
 
 
 class TestLarkNotifierEnabled:
@@ -19,20 +19,20 @@ class TestLarkNotifierEnabled:
 
     def test_send_is_noop_when_disabled(self):
         notifier = LarkNotifier(webhook_url="")
-        event = FeedingEvent(cat_name="Mochi", started_at=1000, last_activity_at=1420)
-        assert notifier.send_feeding_alert(event) is False
+        session = FeedingSession(
+            cat_name="Mochi", activity="eating", started_at=1000, last_seen_at=1420,
+        )
+        assert notifier.send_feeding_alert(session) is False
 
 
 class TestLarkNotifierCards:
     def test_feeding_card_structure(self):
         notifier = LarkNotifier(webhook_url="https://open.feishu.cn/hook/test")
-        event = FeedingEvent(
+        session = FeedingSession(
             cat_name="Mochi",
+            activity="eating",
             started_at=1000.0,
-            last_activity_at=1420.0,
-            food_level_before="full",
-            food_level_after="half",
-            confidence=0.92,
+            last_seen_at=1420.0,
         )
 
         with patch("src.notifier.httpx.post") as mock_post:
@@ -40,7 +40,7 @@ class TestLarkNotifierCards:
             mock_resp.json.return_value = {"code": 0}
             mock_post.return_value = mock_resp
 
-            result = notifier.send_feeding_alert(event, bowl_name="Kitchen")
+            result = notifier.send_feeding_alert(session)
 
         assert result is True
         call_args = mock_post.call_args

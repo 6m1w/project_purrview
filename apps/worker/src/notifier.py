@@ -8,7 +8,7 @@ from typing import Optional
 import httpx
 
 from .config import get_settings
-from .tracker import FeedingEvent
+from .tracker import FeedingSession
 
 
 class LarkNotifier:
@@ -26,25 +26,27 @@ class LarkNotifier:
 
     def send_feeding_alert(
         self,
-        event: FeedingEvent,
-        bowl_name: str = "Unknown",
+        session: FeedingSession,
     ) -> bool:
         """Send a real-time feeding alert card to Lark."""
         if not self.enabled:
             return False
 
-        cat = event.cat_name or "Unknown cat"
-        duration = (event.last_activity_at - event.started_at) / 60
-        started = datetime.fromtimestamp(event.started_at, tz=timezone.utc)
-        ended = datetime.fromtimestamp(event.last_activity_at, tz=timezone.utc)
+        cat = session.cat_name or "Unknown cat"
+        activity = session.activity
+        duration = (session.last_seen_at - session.started_at) / 60
+        started = datetime.fromtimestamp(session.started_at, tz=timezone.utc)
+        ended = datetime.fromtimestamp(session.last_seen_at, tz=timezone.utc)
         time_range = f"{started.strftime('%H:%M')} - {ended.strftime('%H:%M')}"
+        emoji = "💧" if activity == "drinking" else "🍽️"
+        verb = "drank water" if activity == "drinking" else "ate"
 
         card = {
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "template": "green",
-                    "title": {"tag": "plain_text", "content": f"🍽️ {cat} just ate!"},
+                    "template": "green" if activity == "eating" else "blue",
+                    "title": {"tag": "plain_text", "content": f"{emoji} {cat} just {verb}!"},
                 },
                 "elements": [
                     {
@@ -56,7 +58,7 @@ class LarkNotifier:
                             },
                             {
                                 "is_short": True,
-                                "text": {"tag": "lark_md", "content": f"**Bowl**\n{bowl_name}"},
+                                "text": {"tag": "lark_md", "content": f"**Activity**\n{activity}"},
                             },
                         ],
                     },
@@ -74,30 +76,7 @@ class LarkNotifier:
                                 "is_short": True,
                                 "text": {
                                     "tag": "lark_md",
-                                    "content": f"**Confidence**\n{event.confidence:.0%}",
-                                },
-                            },
-                        ],
-                    },
-                    {
-                        "tag": "div",
-                        "fields": [
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": (
-                                        f"**Food before**\n{event.food_level_before or 'N/A'}"
-                                    ),
-                                },
-                            },
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": (
-                                        f"**Food after**\n{event.food_level_after or 'N/A'}"
-                                    ),
+                                    "content": f"**Frames**\n{len(session.frames)}",
                                 },
                             },
                         ],

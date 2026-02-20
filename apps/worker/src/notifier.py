@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 import httpx
@@ -36,8 +36,9 @@ class LarkNotifier:
         cat = session.cat_name or "Unknown cat"
         activity = session.activity
         duration = (session.last_seen_at - session.started_at) / 60
-        started = datetime.fromtimestamp(session.started_at, tz=timezone.utc)
-        ended = datetime.fromtimestamp(session.last_seen_at, tz=timezone.utc)
+        tz_beijing = timezone(timedelta(hours=8))
+        started = datetime.fromtimestamp(session.started_at, tz=tz_beijing)
+        ended = datetime.fromtimestamp(session.last_seen_at, tz=tz_beijing)
         time_range = f"{started.strftime('%H:%M')} - {ended.strftime('%H:%M')}"
         emoji = "💧" if activity == "drinking" else "🍽️"
         verb = "drank water" if activity == "drinking" else "ate"

@@ -98,12 +98,12 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] EC2 上跑完整 worker（ec2-worker.sh start/stop/status）
 - [x] replay.py --save/--notify：离线验证 Supabase 写入 + Lark 通知
 
-### Phase 4.5：每日 Digest + 异常检测 ⬅️ 当前
-- [ ] 每日 digest 脚本：查 Supabase 统计昨天每只猫的进食/饮水次数
-- [ ] 对比 7 日均值，标注异常（🚨 0 次进食且均值 >= 1）
-- [ ] 每天 08:00 (UTC+8) / 00:00 UTC 发送 Lark digest 卡片
-- [ ] cron 定时任务
-- [ ] 阈值可配置（第一周只统计不告警，第二周启用 🚨 红色告警）
+### Phase 4.5：每日 Digest + 异常检测 ✅
+- [x] 每日 digest 脚本：查 Supabase 统计昨天每只猫的进食/饮水次数
+- [x] 对比 7 日均值，标注异常（🚨 0 次进食且均值 >= 1）
+- [x] 每天 08:00 (UTC+8) / 00:00 UTC 发送 Lark digest 卡片
+- [x] cron 定时任务
+- [x] 阈值可配置（第一周只统计不告警，第二周启用 🚨 红色告警）
 
 ### Phase 5：Web 仪表板
 - [ ] 总览页：今日指标 + 趋势图

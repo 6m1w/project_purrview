@@ -19,54 +19,21 @@ import re
 import sys
 import time
 from collections import defaultdict
-from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from google import genai
 from google.genai import types
-from pydantic import BaseModel, Field
 
+from .analyzer import (
+    Activity,
+    CatActivity,
+    IdentifyResult,
+    CAT_NAMES,
+    CAT_DESCRIPTIONS,
+    build_identify_prompt,
+)
 from .label import _load_api_key
 
-
-# --- Structured output schema ---
-
-class Activity(str, Enum):
-    EATING = "eating"
-    DRINKING = "drinking"
-    PRESENT = "present"
-
-
-class CatActivity(BaseModel):
-    """Per-cat identification with activity classification."""
-    name: str = Field(description="Cat name (from known cats only)")
-    activity: Activity = Field(description="What this cat is doing")
-
-
-class IdentifyResult(BaseModel):
-    """Gemini response for cat identification in a single frame."""
-    cats_present: bool = Field(description="Whether one or more cats are visible")
-    cats: list[CatActivity] = Field(
-        default_factory=list,
-        description="Per-cat identification with activity",
-    )
-    description: Optional[str] = Field(None, description="Brief description of the scene")
-    confidence: float = Field(0.0, ge=0.0, le=1.0, description="Overall identification confidence")
-
-
-# --- Constants ---
-
-CAT_NAMES = ["大吉", "小慢", "小黑", "麻酱", "松花"]
-
-# Appearance descriptions to help disambiguate similar-looking cats
-CAT_DESCRIPTIONS: dict[str, str] = {
-    "大吉": "Orange/ginger cat with white patches. Light-colored, medium-large build.",
-    "小慢": "Calico cat with distinct patches of orange, black and white. Medium build.",
-    "小黑": "Solid black cat. Sleek, medium build.",
-    "麻酱": "Tortoiseshell cat with a dark mix of black and brown/amber mottled pattern. No stripes.",
-    "松花": "Brown tabby cat with visible dark stripes/mackerel pattern. Lighter than 麻酱.",
-}
 
 REFS_PER_CAT = 3
 
@@ -202,54 +169,6 @@ def _parse_multi_cat_activity(desc: str, cats: list[str]) -> dict[str, str]:
             activities[cat] = _classify_text(desc)
 
     return activities
-
-
-# --- Prompt building ---
-
-def build_identify_prompt(
-    ref_images: dict[str, list[bytes]],
-    test_image: bytes,
-) -> list:
-    """Build multimodal few-shot prompt with reference images and test frame.
-
-    Args:
-        ref_images: {cat_name: [jpeg_bytes, ...]} reference images per cat
-        test_image: JPEG bytes of the frame to identify
-    """
-    parts: list = []
-
-    parts.append(
-        "You are a cat identification system. A fixed camera monitors a feeding area. "
-        "The layout from left to right: water dispenser (white round device) → 3 food bowls with kibble. "
-        "There are 5 known cats. Identify which cat(s) appear in the test image.\n\n"
-        "Rules:\n"
-        "- Only return names from the list below\n"
-        "- A frame may have 0, 1, or multiple cats\n"
-        "- Check edges of the image for partially visible cats\n"
-        "- For each cat, classify their activity:\n"
-        '  - "eating" if eating from a food bowl (center/right bowls)\n'
-        '  - "drinking" if drinking from the water dispenser (white round device on the left)\n'
-        '  - "present" if visible but not eating or drinking (sitting, walking, looking)\n\n'
-        "Known cats and their reference photos:\n"
-    )
-
-    # Add reference photos per cat with brief appearance hint
-    for cat_name in CAT_NAMES:
-        images = ref_images.get(cat_name, [])
-        if not images:
-            continue
-        desc = CAT_DESCRIPTIONS.get(cat_name, "")
-        parts.append(f"\n{cat_name} — {desc}\n")
-        for img_bytes in images:
-            parts.append(types.Part.from_bytes(data=img_bytes, mime_type="image/jpeg"))
-
-    # Add test frame
-    parts.append(
-        "\n\nTEST IMAGE — identify the cat(s):\n"
-    )
-    parts.append(types.Part.from_bytes(data=test_image, mime_type="image/jpeg"))
-
-    return parts
 
 
 # --- Evaluation ---

@@ -1,97 +1,98 @@
-"""Feeding event state machine - groups frames into feeding events."""
+"""Per-cat feeding session tracker.
+
+Groups Gemini analysis results into feeding/drinking sessions.
+Each cat is tracked independently with a simple state machine:
+IDLE -> IN_SESSION (on eating/drinking) -> IDLE (after timeout).
+"""
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
-from enum import Enum
-from typing import Optional
 
-from .analyzer import FrameAnalysis
-
-
-class FeedingState(Enum):
-    IDLE = "idle"
-    ACTIVE = "active"       # motion detected, waiting for Gemini confirmation
-    FEEDING = "feeding"     # Gemini confirmed cat is eating
+from .analyzer import Activity, IdentifyResult
 
 
 @dataclass
-class FeedingEvent:
-    """Represents an ongoing or completed feeding event."""
-    cat_name: Optional[str] = None
-    bowl_id: Optional[str] = None
-    started_at: float = 0.0
-    last_activity_at: float = 0.0
-    food_level_before: Optional[str] = None
-    food_level_after: Optional[str] = None
-    confidence: float = 0.0
-    frame_analyses: list[FrameAnalysis] = field(default_factory=list)
-    frame_urls: list[str] = field(default_factory=list)
-    notes: list[str] = field(default_factory=list)
+class FeedingSession:
+    """A feeding or drinking session for a single cat."""
+    cat_name: str
+    activity: str                       # "eating" or "drinking"
+    started_at: float                   # unix timestamp
+    last_seen_at: float                 # unix timestamp
+    frames: list[dict] = field(default_factory=list)
 
 
-class FeedingTracker:
-    """Tracks feeding state per bowl and groups frames into events."""
+class SessionTracker:
+    """Tracks per-cat feeding/drinking sessions.
 
-    def __init__(self, idle_timeout: int = 120):
+    Rules:
+    - eating/drinking -> starts or continues a session
+    - present -> keeps existing session alive (resets idle timer) but doesn't start one
+    - activity change (eating->drinking) -> ends old session, starts new one
+    - 60s no detection -> session ends
+    """
+
+    def __init__(self, idle_timeout: int = 60):
         self.idle_timeout = idle_timeout
-        self.state: dict[str, FeedingState] = {}          # bowl_id -> state
-        self.current_event: dict[str, FeedingEvent] = {}  # bowl_id -> event
+        self.sessions: dict[str, FeedingSession] = {}  # cat_name -> active session
 
-    def on_motion(self, bowl_id: str) -> None:
-        """Called when motion is detected in a bowl's ROI."""
-        current = self.state.get(bowl_id, FeedingState.IDLE)
-        if current == FeedingState.IDLE:
-            self.state[bowl_id] = FeedingState.ACTIVE
-            self.current_event[bowl_id] = FeedingEvent(
-                bowl_id=bowl_id,
-                started_at=time.time(),
-                last_activity_at=time.time(),
-            )
-        else:
-            event = self.current_event.get(bowl_id)
-            if event:
-                event.last_activity_at = time.time()
+    def on_analysis(
+        self,
+        result: IdentifyResult,
+        timestamp: float,
+        frame_info: dict | None = None,
+    ) -> list[FeedingSession]:
+        """Process a Gemini analysis result. Returns list of completed sessions.
 
-    def on_analysis(self, bowl_id: str, analysis: FrameAnalysis) -> None:
-        """Called when Gemini analysis completes for a bowl."""
-        event = self.current_event.get(bowl_id)
-        if not event:
-            return
+        Args:
+            result: Gemini IdentifyResult with per-cat activities
+            timestamp: Frame timestamp (unix seconds)
+            frame_info: Optional dict with frame metadata (filename, etc.)
+        """
+        completed: list[FeedingSession] = []
 
-        event.frame_analyses.append(analysis)
-        event.last_activity_at = time.time()
+        for cat in result.cats:
+            name = cat.name
+            activity = cat.activity
 
-        if analysis.cat_detected and analysis.is_eating:
-            self.state[bowl_id] = FeedingState.FEEDING
-            if not event.cat_name and analysis.cat_name:
-                event.cat_name = analysis.cat_name
-            if not event.food_level_before and analysis.food_level:
-                event.food_level_before = analysis.food_level.value
-            # Always update "after" to latest
-            if analysis.food_level:
-                event.food_level_after = analysis.food_level.value
-            event.confidence = max(event.confidence, analysis.confidence)
-            if analysis.notes:
-                event.notes.append(analysis.notes)
+            existing = self.sessions.get(name)
 
-    def check_idle(self) -> list[tuple[str, FeedingEvent]]:
-        """Check for bowls that have gone idle. Returns completed events."""
-        completed = []
-        now = time.time()
+            if activity in (Activity.EATING, Activity.DRINKING):
+                if existing and existing.activity != activity.value:
+                    # Activity changed — end old session, start new one
+                    completed.append(existing)
+                    del self.sessions[name]
+                    existing = None
 
-        for bowl_id, state in list(self.state.items()):
-            if state == FeedingState.IDLE:
-                continue
-            event = self.current_event.get(bowl_id)
-            if event and (now - event.last_activity_at) > self.idle_timeout:
-                completed.append((bowl_id, event))
-                self.state[bowl_id] = FeedingState.IDLE
-                del self.current_event[bowl_id]
+                if existing:
+                    # Continue existing session
+                    existing.last_seen_at = timestamp
+                    if frame_info:
+                        existing.frames.append(frame_info)
+                else:
+                    # Start new session
+                    session = FeedingSession(
+                        cat_name=name,
+                        activity=activity.value,
+                        started_at=timestamp,
+                        last_seen_at=timestamp,
+                    )
+                    if frame_info:
+                        session.frames.append(frame_info)
+                    self.sessions[name] = session
+
+            elif activity == Activity.PRESENT and existing:
+                # Present keeps session alive but doesn't start one
+                existing.last_seen_at = timestamp
 
         return completed
 
-    def get_state(self, bowl_id: str) -> FeedingState:
-        """Get the current state of a bowl."""
-        return self.state.get(bowl_id, FeedingState.IDLE)
+    def check_idle(self, now: float) -> list[FeedingSession]:
+        """Check for sessions that have timed out. Returns completed sessions."""
+        completed: list[FeedingSession] = []
+        for name in list(self.sessions):
+            session = self.sessions[name]
+            if (now - session.last_seen_at) > self.idle_timeout:
+                completed.append(session)
+                del self.sessions[name]
+        return completed

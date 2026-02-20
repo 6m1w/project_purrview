@@ -48,7 +48,7 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 
 ## 技术约束
 
-- **成本控制**：Gemini 2.5 Flash 约 $0.0011/图片，预估每天 ~150 次调用 ≈ $0.17/天
+- **成本控制**：Gemini 2.5 Flash ~$0.0026/call（16 图含参考照片），30s cooldown ~120 calls/day ≈ $0.31/天，EC2 存储 7-day rolling ~54GB ≈ $4.3/月，**总计 ~$3/周**
 - **延迟**：运动检测 < 10ms/帧，Gemini 分析 ~2-3 秒/帧（可接受，不是实时需求）
 - **共享数据库**：所有表使用 `purrview_` 前缀，与 project-kalshi 共享 Supabase 项目
 
@@ -78,21 +78,24 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - 修复：config.py .env 路径解析
 - Supabase Storage bucket 创建（purrview-frames）
 
-### Phase 3：数据标注 + Gemini 调优 ⬅️ 当前
-- [ ] 在 EC2 上采集 24h 数据（5 秒/帧，~2.6GB/天）
-- [ ] 从采集帧中筛选有猫的帧，收集每只猫的参考照片（俯视角度）
-- [ ] 人工标注：猫名、是否进食、食物量
-- [ ] 标定食盆 ROI 坐标（写入 purrview_food_bowls 表）
-- [ ] 用标注数据测试 Gemini prompt，调优识别准确率
-- [ ] 校准运动检测阈值（区分噪声 vs 真实运动）
+### Phase 3：数据标注 + Gemini 调优 ✅
+- [x] 在 EC2 上采集 24h 数据（5 秒/帧，~3GB/天）
+- [x] 从采集帧中筛选有猫的帧，收集每只猫的参考照片（俯视角度）
+- [x] 人工标注：猫名（224 帧，labels.json）
+- [x] 用标注数据测试 Gemini prompt，调优识别准确率（92.8% exact match）
+- [x] 校准运动检测阈值（motion_score > 5000）
+- [x] 活动分类评估：eating/drinking/present（73.7% baseline）
+- [ ] ~~标定食盆 ROI 坐标~~ → 延后，Gemini 直接从全帧识别即可
 
-### Phase 4：端到端 Pipeline 打通
-- [ ] 接入 Gemini 实时分析（analyzer.py 已有骨架）
-- [ ] 事件存储到 Supabase（storage.py 已有骨架）
+### Phase 4：端到端 Pipeline 打通 ⬅️ 当前
+- [ ] 实时分析：analyzer.py 接入 Gemini（IdentifyResult schema + 30s cooldown）
+- [ ] Session 追踪：tracker.py 实现 per-cat 状态机（eating/drinking/present → session start/end）
+- [ ] 事件存储：storage.py 写入 Supabase（purrview_feeding_events 加 activity 字段）
 - [ ] 关键帧上传到 Supabase Storage
+- [ ] main.py 整合：capture → motion gate → Gemini → tracker → storage
 - [ ] Lark 通知接入真实事件
+- [ ] EC2 本地数据 7-day rolling 自动清理（cron）
 - [ ] EC2 上跑完整 worker（main.py）
-- [ ] EC2 本地数据自动清理（cron）
 
 ### Phase 5：Web 仪表板
 - [ ] 总览页：今日指标 + 趋势图

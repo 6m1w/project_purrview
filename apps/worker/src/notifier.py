@@ -112,86 +112,108 @@ class LarkNotifier:
         }
         return self._post_to_lark(card)
 
-    def send_daily_digest(
-        self,
-        events: list[dict],
-        date_str: str,
-    ) -> bool:
-        """Send a daily digest summary card to Lark."""
+    def send_daily_digest(self, digest: dict) -> bool:
+        """Send a daily digest card with per-cat stats and anomaly flags.
+
+        Args:
+            digest: Output of digest.build_digest() containing date, cats, totals.
+        """
         if not self.enabled:
             return False
 
-        # Aggregate per-cat stats
-        cat_stats: dict[str, dict] = {}
-        for ev in events:
-            cat_name = ev.get("cat_name") or ev.get("purrview_cats", {}).get("name", "Unknown")
-            if cat_name not in cat_stats:
-                cat_stats[cat_name] = {"count": 0, "total_duration": 0.0}
-            cat_stats[cat_name]["count"] += 1
-            started = ev.get("started_at", "")
-            ended = ev.get("ended_at", "")
-            if started and ended:
-                try:
-                    t0 = datetime.fromisoformat(started)
-                    t1 = datetime.fromisoformat(ended)
-                    cat_stats[cat_name]["total_duration"] += (t1 - t0).total_seconds() / 60
-                except (ValueError, TypeError):
-                    pass
+        date_str = digest["date"]
+        cats = digest["cats"]
+        total_eating = digest["total_eating"]
+        total_drinking = digest["total_drinking"]
 
-        total_feedings = len(events)
-        cats_fed = len(cat_stats)
+        # Build per-cat table
+        header_line = "Cat       Eat  (avg)   Drink (avg)"
+        table_lines = [header_line]
+        alerts: list[str] = []
 
-        # Build per-cat breakdown
-        breakdown_lines = []
-        for name, stats in sorted(cat_stats.items()):
-            breakdown_lines.append(
-                f"**{name}**: {stats['count']} meal(s), ~{stats['total_duration']:.0f} min"
-            )
-        breakdown = "\n".join(breakdown_lines) if breakdown_lines else "No feedings recorded"
+        from .analyzer import CAT_NAMES
+        for name in CAT_NAMES:
+            c = cats.get(name, {})
+            ye = c.get("yesterday_eating", 0)
+            ae = c.get("avg_eating", 0)
+            yd = c.get("yesterday_drinking", 0)
+            ad = c.get("avg_drinking", 0)
+            alert = c.get("alert")
+
+            flag = "  "
+            if alert == "no_eating":
+                flag = "🚨"
+                alerts.append(f"🚨 **{name}** 昨天未检测到进食")
+            elif alert == "low_eating":
+                flag = "⚠️"
+                alerts.append(f"⚠️ **{name}** 昨天进食明显减少")
+
+            table_lines.append(f"{flag} {name}    {ye}   ({ae})     {yd}   ({ad})")
+
+        table_md = "```\n" + "\n".join(table_lines) + "\n```"
+
+        # Choose header color based on alerts
+        has_red = any(c.get("alert") == "no_eating" for c in cats.values())
+        has_yellow = any(c.get("alert") == "low_eating" for c in cats.values())
+        if has_red:
+            template = "red"
+            title = f"🚨 PurrView Daily — {date_str}"
+        elif has_yellow:
+            template = "orange"
+            title = f"⚠️ PurrView Daily — {date_str}"
+        else:
+            template = "blue"
+            title = f"📊 PurrView Daily — {date_str}"
+
+        elements: list[dict] = [
+            {
+                "tag": "div",
+                "fields": [
+                    {
+                        "is_short": True,
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**Total eating**\n{total_eating}",
+                        },
+                    },
+                    {
+                        "is_short": True,
+                        "text": {
+                            "tag": "lark_md",
+                            "content": f"**Total drinking**\n{total_drinking}",
+                        },
+                    },
+                ],
+            },
+            {"tag": "hr"},
+            {
+                "tag": "div",
+                "text": {"tag": "lark_md", "content": table_md},
+            },
+        ]
+
+        if alerts:
+            elements.append({"tag": "hr"})
+            elements.append({
+                "tag": "div",
+                "text": {"tag": "lark_md", "content": "\n".join(alerts)},
+            })
+
+        elements.append({
+            "tag": "note",
+            "elements": [
+                {"tag": "plain_text", "content": "PurrView Daily Digest · (avg) = 7-day rolling average"},
+            ],
+        })
 
         card = {
             "msg_type": "interactive",
             "card": {
                 "header": {
-                    "template": "blue",
-                    "title": {
-                        "tag": "plain_text",
-                        "content": f"📊 PurrView Daily - {date_str}",
-                    },
+                    "template": template,
+                    "title": {"tag": "plain_text", "content": title},
                 },
-                "elements": [
-                    {
-                        "tag": "div",
-                        "fields": [
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": f"**Total feedings**\n{total_feedings}",
-                                },
-                            },
-                            {
-                                "is_short": True,
-                                "text": {
-                                    "tag": "lark_md",
-                                    "content": f"**Cats fed**\n{cats_fed}/5",
-                                },
-                            },
-                        ],
-                    },
-                    {"tag": "hr"},
-                    {
-                        "tag": "div",
-                        "text": {"tag": "lark_md", "content": breakdown},
-                    },
-                    {"tag": "hr"},
-                    {
-                        "tag": "note",
-                        "elements": [
-                            {"tag": "plain_text", "content": "PurrView Daily Digest"},
-                        ],
-                    },
-                ],
+                "elements": elements,
             },
         }
         return self._post_to_lark(card)

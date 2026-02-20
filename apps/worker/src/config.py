@@ -32,7 +32,8 @@ class Settings(BaseSettings):
     frame_interval: int = Field(2, description="Seconds between frame extraction")
     motion_threshold: int = Field(500, description="Min non-zero pixels to trigger detection")
     motion_cooldown: int = Field(30, description="Seconds between Gemini API calls")
-    idle_timeout: int = Field(120, description="Seconds of no motion to end feeding event")
+    idle_timeout: int = Field(60, description="Seconds of no activity to end feeding session")
+    refs_dir: str = Field("data/refs", description="Directory with reference photos and refs.json")
 
     # Lark (Feishu) notifications
     lark_webhook_url: str = Field("", description="Lark webhook URL (empty = disabled)")

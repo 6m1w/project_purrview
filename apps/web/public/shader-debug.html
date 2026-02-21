@@ -43,6 +43,17 @@
   <h3>Scanline Shader Debug</h3>
 
   <div class="section">
+    <div class="section-title">Video Source</div>
+    <div class="ctrl">
+      <select id="videoSelect" style="width:100%;padding:4px;background:#222;color:#0f0;border:1px solid #444;font-family:monospace;">
+        <option value="/majiang_nobg.webm" selected>majiang (麻酱)</option>
+        <option value="/songhua_nobg.webm">songhua (松花)</option>
+        <option value="/xiaoman_nobg.webm">xiaoman (小慢)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Render Mode</div>
     <div class="toggle">
       <input type="checkbox" id="variableWidth" checked>
@@ -331,6 +342,13 @@ video.crossOrigin = 'anonymous';
 video.play().catch(() => {});
 document.body.addEventListener('click', () => { if (video.paused) video.play(); });
 
+// Video source switcher
+document.getElementById('videoSelect').addEventListener('change', (e) => {
+  video.src = e.target.value;
+  video.load();
+  video.play().catch(() => {});
+});
+
 // Controls binding
 const sliders = {};
 ['lineDensity','widthRatio','threshold','jitter','jitterSpeed',
@@ -351,6 +369,7 @@ const checks = {};
 document.getElementById('export-btn').addEventListener('click', () => {
   const out = document.getElementById('export-output');
   const cfg = {
+    video: document.getElementById('videoSelect').value,
     mode: checks.variableWidth.checked ? 'variableWidth' : 'binaryThreshold',
     cover: checks.coverMode.checked,
     bgScanlines: checks.bgScanlines.checked,

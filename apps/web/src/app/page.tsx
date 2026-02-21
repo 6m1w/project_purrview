@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { ScanlineCanvas } from "@/components/ScanlineCanvas";
+import { HeroCarousel } from "@/components/HeroCarousel";
 
 export default function Home() {
   return (
@@ -34,13 +34,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Right side — scanline canvas, full viewport, cover mode fills it */}
-      <div className="absolute inset-0 hidden md:block">
-        <ScanlineCanvas
-          videoSrc="/majiang_nobg.webm"
-          className="w-full h-full"
-        />
-      </div>
+      {/* Scanline canvas carousel with dot indicators */}
+      <HeroCarousel />
     </section>
   );
 }

@@ -2,24 +2,38 @@
 
 import { useRef, useEffect } from "react";
 
+export interface ScanlineConfig {
+  lineDensity: number;
+  widthRatio: number;
+  jitter: number;
+  jitterSpeed: number;
+  offsetX: number;
+  offsetY: number;
+  zoom: number;
+  alphaThreshold: number;
+  minDarkness: number;
+  bgLineOpacity: number;
+}
+
 interface ScanlineCanvasProps {
   videoSrc: string;
+  config?: Partial<ScanlineConfig>;
   className?: string;
 }
 
-// Scanline effect configuration (tuned via shader-debug.html)
-const CONFIG = {
+// Default configuration (tuned via shader-debug.html for majiang)
+const DEFAULT_CONFIG: ScanlineConfig = {
   lineDensity: 6,
   widthRatio: 0.7,
   jitter: 0,
   jitterSpeed: 15,
-  offsetX: -0.1, // negative = push cat right
+  offsetX: -0.1,
   offsetY: -0.03,
   zoom: 1.0,
   alphaThreshold: 0.7,
-  minDarkness: 0.3, // ignore near-white pixels even if alpha passes
+  minDarkness: 0.3,
   bgLineOpacity: 0.9,
-} as const;
+};
 
 const BG = [0.92, 0.92, 0.904] as const; // bgBright=0.92
 const FG = [0.1, 0.1, 0.1] as const; // fgBright=0.1
@@ -157,10 +171,11 @@ function linkProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShader
 
 // --- Component ---
 
-export function ScanlineCanvas({ videoSrc, className }: ScanlineCanvasProps) {
+export function ScanlineCanvas({ videoSrc, config: configOverride, className }: ScanlineCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const CONFIG = { ...DEFAULT_CONFIG, ...configOverride };
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -296,7 +311,7 @@ export function ScanlineCanvas({ videoSrc, className }: ScanlineCanvasProps) {
       gl!.deleteBuffer(buf);
       gl!.deleteProgram(program);
     };
-  }, [videoSrc]);
+  }, [videoSrc, configOverride]);
 
   return <canvas ref={canvasRef} className={className} />;
 }

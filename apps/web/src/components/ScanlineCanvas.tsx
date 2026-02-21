@@ -10,7 +10,7 @@ interface ScanlineCanvasProps {
 // Scanline effect configuration (tuned via shader-debug.html)
 const CONFIG = {
   lineDensity: 6,
-  widthRatio: 0.6,
+  widthRatio: 0.7,
   jitter: 0,
   jitterSpeed: 15,
   offsetX: -0.1, // negative = push cat right

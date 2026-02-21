@@ -1,15 +1,7 @@
 import type { RecentEvent } from "@/lib/queries";
 import { formatDistanceToNow } from "date-fns";
 import { Utensils, Droplets, Eye } from "lucide-react";
-
-// Cat color mapping
-const CAT_COLORS: Record<string, string> = {
-    "\u5927\u5409": "#f59e0b", // 大吉
-    "\u5c0f\u6162": "#3b82f6", // 小慢
-    "\u9ebb\u9171": "#d97706", // 麻酱
-    "\u677e\u82b1": "#22c55e", // 松花
-    "\u5c0f\u9ed1": "#8b5cf6", // 小黑
-};
+import { CAT_COLORS } from "@/lib/catColors";
 
 function getActivityIcon(activity: string) {
     switch (activity) {
@@ -39,7 +31,7 @@ interface RecentActivityProps {
 
 export function RecentActivity({ events }: RecentActivityProps) {
     return (
-        <div className="col-span-3 border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
+        <div className="lg:col-span-3 border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
             <div className="p-6 border-b-4 border-black bg-[#f4f4f0]">
                 <h3 className="font-press-start text-xl font-bold uppercase text-black">
                     Activity Log

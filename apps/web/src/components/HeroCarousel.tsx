@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { ScanlineCanvas, type ScanlineConfig } from "./ScanlineCanvas";
 
 interface CatSlide {
@@ -24,7 +24,7 @@ const SLIDES: CatSlide[] = [
   {
     name: "xiaoman",
     videoSrc: "/xiaoman_nobg.webm",
-    // TODO: tune via shader-debug.html
+    config: { cropLeft: 0.23 },
   },
   // TODO: add daji, xiaohei
 ];
@@ -36,24 +36,21 @@ export function HeroCarousel() {
     setActive(idx);
   }, []);
 
-  // Auto-advance every 8 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActive((prev) => (prev + 1) % SLIDES.length);
-    }, 8000);
-    return () => clearInterval(timer);
+  // Advance to next slide when current video ends
+  const handleVideoEnd = useCallback(() => {
+    setActive((prev) => (prev + 1) % SLIDES.length);
   }, []);
 
   const slide = SLIDES[active];
 
   return (
     <>
-      {/* Canvas — key forces remount on slide change to swap video */}
+      {/* Canvas — single instance, hot-swaps video source */}
       <div className="absolute inset-0 hidden md:block">
         <ScanlineCanvas
-          key={slide.name}
           videoSrc={slide.videoSrc}
           config={slide.config}
+          onVideoEnd={handleVideoEnd}
           className="w-full h-full"
         />
       </div>

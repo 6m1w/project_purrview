@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useCallback } from "react";
 
 export interface ScanlineConfig {
   lineDensity: number;
@@ -13,12 +13,14 @@ export interface ScanlineConfig {
   alphaThreshold: number;
   minDarkness: number;
   bgLineOpacity: number;
+  cropLeft: number;
 }
 
 interface ScanlineCanvasProps {
   videoSrc: string;
   config?: Partial<ScanlineConfig>;
   className?: string;
+  onVideoEnd?: () => void;
 }
 
 // Default configuration (tuned via shader-debug.html for majiang)
@@ -33,6 +35,7 @@ const DEFAULT_CONFIG: ScanlineConfig = {
   alphaThreshold: 0.7,
   minDarkness: 0.3,
   bgLineOpacity: 0.9,
+  cropLeft: 0,
 };
 
 const BG = [0.92, 0.92, 0.904] as const; // bgBright=0.92
@@ -63,6 +66,7 @@ uniform float u_zoom;
 uniform float u_alphaThreshold;
 uniform float u_minDarkness;
 uniform float u_bgLineOpacity;
+uniform float u_cropLeft;
 uniform vec3 u_fg;
 uniform vec3 u_bg;
 
@@ -105,6 +109,17 @@ void main() {
 
   // Out of bounds -> background with subtle scanlines
   if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) {
+    float bgLineWidth = 0.7;
+    if (local <= bgLineWidth) {
+      gl_FragColor = vec4(u_bg * u_bgLineOpacity, 1.0);
+    } else {
+      gl_FragColor = vec4(u_bg, 1.0);
+    }
+    return;
+  }
+
+  // Crop left edge (removes black border artifacts)
+  if (u_cropLeft > 0.0 && sampleUV.x < u_cropLeft) {
     float bgLineWidth = 0.7;
     if (local <= bgLineWidth) {
       gl_FragColor = vec4(u_bg * u_bgLineOpacity, 1.0);
@@ -171,11 +186,23 @@ function linkProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShader
 
 // --- Component ---
 
-export function ScanlineCanvas({ videoSrc, config: configOverride, className }: ScanlineCanvasProps) {
+export function ScanlineCanvas({ videoSrc, config: configOverride, className, onVideoEnd }: ScanlineCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const configRef = useRef<ScanlineConfig>({ ...DEFAULT_CONFIG, ...configOverride });
+  const onVideoEndRef = useRef(onVideoEnd);
 
+  // Keep refs in sync with props
+  configRef.current = { ...DEFAULT_CONFIG, ...configOverride };
+  onVideoEndRef.current = onVideoEnd;
+
+  // Handle video ended event
+  const handleEnded = useCallback(() => {
+    onVideoEndRef.current?.();
+  }, []);
+
+  // WebGL setup — runs once on mount, never tears down until unmount
   useEffect(() => {
-    const CONFIG = { ...DEFAULT_CONFIG, ...configOverride };
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -221,6 +248,7 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className }: 
       alphaThreshold: gl.getUniformLocation(program, "u_alphaThreshold"),
       minDarkness: gl.getUniformLocation(program, "u_minDarkness"),
       bgLineOpacity: gl.getUniformLocation(program, "u_bgLineOpacity"),
+      cropLeft: gl.getUniformLocation(program, "u_cropLeft"),
       fg: gl.getUniformLocation(program, "u_fg"),
       bg: gl.getUniformLocation(program, "u_bg"),
     };
@@ -238,17 +266,14 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className }: 
     gl.uniform3f(u.fg, FG[0], FG[1], FG[2]);
     gl.uniform3f(u.bg, BG[0], BG[1], BG[2]);
 
-    // Video element
+    // Create video element (persists across source changes)
     const video = document.createElement("video");
-    video.src = videoSrc;
-    video.autoplay = true;
-    video.loop = true;
     video.muted = true;
     video.playsInline = true;
     video.crossOrigin = "anonymous";
     video.style.display = "none";
     document.body.appendChild(video);
-    video.play().catch(() => {});
+    videoRef.current = video;
 
     // Resize canvas buffer to CSS size × DPR
     function resize() {
@@ -263,13 +288,15 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className }: 
       gl!.viewport(0, 0, w, h);
     }
 
-    // Render loop
+    // Render loop — reads config from ref each frame
     let raf = 0;
     function draw(timeMs: number) {
       raf = requestAnimationFrame(draw);
       resize();
 
       if (video.readyState < 2 || video.videoWidth === 0) return;
+
+      const cfg = configRef.current;
 
       gl!.activeTexture(gl!.TEXTURE0);
       gl!.bindTexture(gl!.TEXTURE_2D, tex);
@@ -279,16 +306,17 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className }: 
       gl!.uniform2f(u.resolution, canvas!.width, canvas!.height);
       gl!.uniform2f(u.videoSize, video.videoWidth, video.videoHeight);
       gl!.uniform1f(u.time, timeMs * 0.001);
-      gl!.uniform1f(u.lineDensity, CONFIG.lineDensity);
-      gl!.uniform1f(u.widthRatio, CONFIG.widthRatio);
-      gl!.uniform1f(u.jitterPx, CONFIG.jitter);
-      gl!.uniform1f(u.jitterSpeed, CONFIG.jitterSpeed);
-      gl!.uniform1f(u.offsetX, CONFIG.offsetX);
-      gl!.uniform1f(u.offsetY, CONFIG.offsetY);
-      gl!.uniform1f(u.zoom, CONFIG.zoom);
-      gl!.uniform1f(u.alphaThreshold, CONFIG.alphaThreshold);
-      gl!.uniform1f(u.minDarkness, CONFIG.minDarkness);
-      gl!.uniform1f(u.bgLineOpacity, CONFIG.bgLineOpacity);
+      gl!.uniform1f(u.lineDensity, cfg.lineDensity);
+      gl!.uniform1f(u.widthRatio, cfg.widthRatio);
+      gl!.uniform1f(u.jitterPx, cfg.jitter);
+      gl!.uniform1f(u.jitterSpeed, cfg.jitterSpeed);
+      gl!.uniform1f(u.offsetX, cfg.offsetX);
+      gl!.uniform1f(u.offsetY, cfg.offsetY);
+      gl!.uniform1f(u.zoom, cfg.zoom);
+      gl!.uniform1f(u.alphaThreshold, cfg.alphaThreshold);
+      gl!.uniform1f(u.minDarkness, cfg.minDarkness);
+      gl!.uniform1f(u.bgLineOpacity, cfg.bgLineOpacity);
+      gl!.uniform1f(u.cropLeft, cfg.cropLeft);
 
       gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
     }
@@ -300,18 +328,34 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className }: 
     };
     document.body.addEventListener("click", onClick);
 
-    // Cleanup
+    // Cleanup on unmount only
     return () => {
       cancelAnimationFrame(raf);
       document.body.removeEventListener("click", onClick);
+      video.removeEventListener("ended", handleEnded);
       video.pause();
       video.src = "";
       video.remove();
+      videoRef.current = null;
       gl!.deleteTexture(tex);
       gl!.deleteBuffer(buf);
       gl!.deleteProgram(program);
     };
-  }, [videoSrc, configOverride]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Mount once — never re-run
+
+  // Hot-swap video source without destroying WebGL context
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.removeEventListener("ended", handleEnded);
+    video.loop = !onVideoEndRef.current;
+    video.addEventListener("ended", handleEnded);
+    video.src = videoSrc;
+    video.load();
+    video.play().catch(() => {});
+  }, [videoSrc, handleEnded]);
 
   return <canvas ref={canvasRef} className={className} />;
 }

@@ -1,4 +1,4 @@
-import { getTodayStats, getWeeklyTrend, getRecentEvents, getCatStatuses } from "@/lib/queries";
+import { getTodayStats, getWeeklyTrendByCat, getRecentEvents, getCatStatuses } from "@/lib/queries";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { FeedingChart } from "@/components/dashboard/FeedingChart";
@@ -9,9 +9,9 @@ import { formatDistanceToNow } from "date-fns";
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-    const [stats, trend, events, catStatuses] = await Promise.all([
+    const [stats, trendByCat, events, catStatuses] = await Promise.all([
         getTodayStats(),
-        getWeeklyTrend(),
+        getWeeklyTrendByCat(),
         getRecentEvents(),
         getCatStatuses(),
     ]);
@@ -59,7 +59,7 @@ export default async function Dashboard() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-10">
-                    <FeedingChart data={trend} />
+                    <FeedingChart eating={trendByCat.eating} drinking={trendByCat.drinking} />
                     <RecentActivity events={events} />
                 </div>
 

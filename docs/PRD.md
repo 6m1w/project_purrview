@@ -109,7 +109,8 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] Hero 页：WebGL scanline shader + 猫咪视频
 - [x] Dashboard 页：实时数据 + Pixelify Sans 像素风
 - [x] 部署到 Vercel (purrview.dev)
-- [ ] 为每只猫生成视频 + 首页轮播（shader-debug.html 调参）
+- [ ] 为每只猫生成视频 + 首页轮播（shader-debug.html 调参，大吉/小黑待生成）
+- [ ] 移动端适配：Hero 居中布局、Nav hamburger、字号/间距调整
 - [ ] 猫咪管理：资料卡片 + 参考照片上传
 - [ ] 进食时间线：事件列表 + 帧缩略图
 - [ ] 统计报表：每日/每周图表

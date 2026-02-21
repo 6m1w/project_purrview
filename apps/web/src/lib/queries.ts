@@ -1,4 +1,5 @@
 import { getSupabase } from "./supabase";
+import { CAT_NAMES } from "./catColors";
 
 // --- Types ---
 
@@ -13,6 +14,15 @@ export type DailyCount = {
   date: string; // YYYY-MM-DD
   eating: number;
   drinking: number;
+};
+
+// Per-cat daily breakdown for stacked bar charts
+// Each entry: { date, label, "大吉": 3, "小慢": 1, ... }
+export type DailyCatCount = Record<string, number | string>;
+
+export type WeeklyTrendByCat = {
+  eating: DailyCatCount[];
+  drinking: DailyCatCount[];
 };
 
 export type RecentEvent = {
@@ -34,7 +44,7 @@ const ALL_CATS = ["大吉", "小慢", "麻酱", "松花", "小黑"];
 
 // Row subset types for Supabase .returns<T>() type hints
 type StatsRow = { cat_name: string | null; activity: string | null; started_at: string };
-type TrendRow = { activity: string | null; started_at: string };
+type TrendRow = { cat_name: string | null; activity: string | null; started_at: string };
 type EventRow = {
   id: string;
   cat_name: string | null;
@@ -113,7 +123,7 @@ export async function getWeeklyTrend(): Promise<DailyCount[]> {
 
   const { data, error } = await supabase
     .from("purrview_feeding_events")
-    .select("activity, started_at")
+    .select("cat_name, activity, started_at")
     .gte("started_at", startISO)
     .order("started_at", { ascending: true })
     .returns<TrendRow[]>();
@@ -149,6 +159,75 @@ export async function getWeeklyTrend(): Promise<DailyCount[]> {
     eating: dayMap[date].eating,
     drinking: dayMap[date].drinking,
   }));
+}
+
+/**
+ * Get weekly trend broken down by cat: separate eating/drinking datasets.
+ * Each entry: { date, label, "大吉": 3, "小慢": 1, ... }
+ * Reuses the same Supabase query as getWeeklyTrend but groups by cat_name.
+ */
+export async function getWeeklyTrendByCat(): Promise<WeeklyTrendByCat> {
+  const supabase = getSupabase();
+
+  const now = new Date();
+  const startDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6)
+  );
+  const startISO = startDate.toISOString();
+
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("cat_name, activity, started_at")
+    .gte("started_at", startISO)
+    .order("started_at", { ascending: true })
+    .returns<TrendRow[]>();
+
+  // Initialize per-day per-cat counters for both activities
+  const orderedDates: string[] = [];
+  const eatingMap: Record<string, Record<string, number>> = {};
+  const drinkingMap: Record<string, Record<string, number>> = {};
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(
+      Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate() + i)
+    );
+    const key = d.toISOString().slice(0, 10);
+    orderedDates.push(key);
+    eatingMap[key] = {};
+    drinkingMap[key] = {};
+    for (const cat of CAT_NAMES) {
+      eatingMap[key][cat] = 0;
+      drinkingMap[key][cat] = 0;
+    }
+  }
+
+  if (error) {
+    console.error("getWeeklyTrendByCat error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const dateKey = row.started_at.slice(0, 10);
+      const catName = row.cat_name;
+      if (!catName || !eatingMap[dateKey]) continue;
+
+      if (row.activity === "eating") {
+        eatingMap[dateKey][catName] = (eatingMap[dateKey][catName] ?? 0) + 1;
+      } else if (row.activity === "drinking") {
+        drinkingMap[dateKey][catName] = (drinkingMap[dateKey][catName] ?? 0) + 1;
+      }
+    }
+  }
+
+  const toChartData = (map: Record<string, Record<string, number>>) =>
+    orderedDates.map((date) => ({
+      date,
+      label: date.slice(5),
+      ...map[date],
+    }));
+
+  return {
+    eating: toChartData(eatingMap),
+    drinking: toChartData(drinkingMap),
+  };
 }
 
 /**

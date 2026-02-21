@@ -105,13 +105,16 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] cron 定时任务
 - [x] 阈值可配置（第一周只统计不告警，第二周启用 🚨 红色告警）
 
-### Phase 5：Web 仪表板 ⬅️ 当前
-- [ ] 总览页：今日指标 + 趋势图
+### Phase 5：Web 仪表板
+- [x] Hero 页：WebGL scanline shader + 猫咪视频
+- [x] Dashboard 页：实时数据 + Pixelify Sans 像素风
+- [x] 部署到 Vercel (purrview.dev)
+- [ ] 为每只猫生成视频 + 首页轮播（shader-debug.html 调参）
 - [ ] 猫咪管理：资料卡片 + 参考照片上传
 - [ ] 进食时间线：事件列表 + 帧缩略图
 - [ ] 统计报表：每日/每周图表
 
 ### Phase 6：生产部署 + 监控
 - [ ] Worker Docker 化部署到 EC2
-- [ ] Web 部署到 Vercel
+- [x] Web 部署到 Vercel
 - [ ] 监控：Worker 心跳、Gemini 调用量/成本

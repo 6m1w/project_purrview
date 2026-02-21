@@ -266,6 +266,10 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className, on
     gl.uniform3f(u.fg, FG[0], FG[1], FG[2]);
     gl.uniform3f(u.bg, BG[0], BG[1], BG[2]);
 
+    // Fill with background color immediately (avoids black flash before video loads)
+    gl.clearColor(BG[0], BG[1], BG[2], 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
     // Create video element (persists across source changes)
     const video = document.createElement("video");
     video.muted = true;

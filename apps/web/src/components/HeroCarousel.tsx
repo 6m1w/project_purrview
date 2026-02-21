@@ -45,6 +45,11 @@ export function HeroCarousel() {
 
   return (
     <>
+      {/* Preload all video files so transitions are instant */}
+      {SLIDES.map((s) => (
+        <link key={s.name} rel="preload" href={s.videoSrc} as="video" />
+      ))}
+
       {/* Canvas — single instance, hot-swaps video source */}
       <div className="absolute inset-0 hidden md:block">
         <ScanlineCanvas

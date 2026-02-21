@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { VT323, Space_Mono, Press_Start_2P } from "next/font/google";
+import { VT323, Space_Mono, Pixelify_Sans } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
@@ -15,8 +15,8 @@ const spaceMono = Space_Mono({
   subsets: ["latin"],
 });
 
-const pressStart2P = Press_Start_2P({
-  weight: "400",
+const pixelifySans = Pixelify_Sans({
+  weight: ["400", "500", "600", "700"],
   variable: "--font-press-start",
   subsets: ["latin"],
 });
@@ -41,11 +41,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${vt323.variable} ${spaceMono.variable} ${pressStart2P.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
+        className={`${vt323.variable} ${spaceMono.variable} ${pixelifySans.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
       >
         <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)]">
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-6">
-            <Link href="/" className="font-press-start text-sm uppercase hover:text-[#FF5722] transition-colors">
+            <Link href="/" className="font-press-start text-2xl font-bold uppercase hover:text-[#FF5722] transition-colors">
               PurrView
             </Link>
             <nav className="flex gap-4">
@@ -53,7 +53,7 @@ export default function RootLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="border-2 border-black bg-white px-4 py-1 flex items-center font-press-start text-[10px] uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
+                  className="border-2 border-black bg-white px-4 py-1 flex items-center font-press-start text-xs font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
                 >
                   {item.label}
                 </Link>

@@ -7,7 +7,7 @@ export default function Home() {
     <section className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden">
       {/* Left side — title, subtitle, CTA */}
       <div className="relative z-10 flex w-full flex-col gap-8 px-8 md:w-[45%] md:px-12 lg:px-16">
-        <h1 className="font-press-start text-4xl md:text-5xl lg:text-6xl leading-[1.4] tracking-tight uppercase">
+        <h1 className="font-press-start text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.4] tracking-tight uppercase">
           Purr
           <br />
           View

@@ -42,7 +42,7 @@ interface CatStatusGridProps {
 export function CatStatusGrid({ statuses }: CatStatusGridProps) {
     return (
         <div>
-            <h3 className="font-press-start text-sm uppercase text-black mb-4 border-b-4 border-black pb-3">
+            <h3 className="font-press-start text-xl font-bold uppercase text-black mb-4 border-b-4 border-black pb-3">
                 Cat Status
             </h3>
             <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">

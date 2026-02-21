@@ -23,13 +23,13 @@ export function MetricCard({
     return (
         <div className={cn("border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_rgba(0,0,0,1)]", className)}>
             <div className="flex flex-row items-center justify-between p-6 pb-2">
-                <h3 className="font-press-start text-[10px] uppercase text-black">
+                <h3 className="font-press-start text-sm font-bold uppercase text-black">
                     {title}
                 </h3>
                 {icon && <div className="text-black">{icon}</div>}
             </div>
             <div className="p-6 pt-0">
-                <div className="font-press-start text-2xl">{value}</div>
+                <div className="font-press-start text-3xl font-bold">{value}</div>
                 {(description || trendValue) && (
                     <p className="font-space-mono text-xs font-bold text-black/70 mt-2 uppercase">
                         {trendValue && (

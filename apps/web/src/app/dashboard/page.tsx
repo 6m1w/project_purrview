@@ -25,8 +25,8 @@ export default async function Dashboard() {
         <div className="flex flex-col space-y-8 p-4 pt-6 max-w-[1600px] mx-auto">
             <section id="dashboard" className="flex flex-col space-y-4">
                 <div className="flex items-center justify-between border-b-4 border-black pb-2">
-                    <h2 className="font-press-start text-lg md:text-xl uppercase">Command Center</h2>
-                    <div className="font-press-start text-[10px] bg-black text-[#00FF66] px-3 py-1.5 border-2 border-black">
+                    <h2 className="font-press-start text-2xl md:text-3xl font-bold uppercase">Command Center</h2>
+                    <div className="font-press-start text-sm font-bold bg-black text-[#00FF66] px-3 py-1.5 border-2 border-black">
                         SYS.ONLINE
                     </div>
                 </div>

@@ -19,7 +19,7 @@ export default function Home() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 border-2 border-black bg-black px-6 py-3 font-space-mono text-sm font-bold text-[#f4f4f0] transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
+            className="inline-flex items-center gap-2 border-2 border-black bg-transparent px-6 py-3 font-space-mono text-sm font-bold text-black md:bg-black md:text-[#f4f4f0] transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
           >
             Get Started
             <ArrowRight className="h-4 w-4" />

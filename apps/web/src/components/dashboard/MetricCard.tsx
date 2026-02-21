@@ -21,17 +21,17 @@ export function MetricCard({
     className,
 }: MetricCardProps) {
     return (
-        <div className={cn("border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_rgba(0,0,0,1)]", className)}>
-            <div className="flex flex-row items-center justify-between p-6 pb-2">
-                <h3 className="font-press-start text-sm font-bold uppercase text-black">
+        <div className={cn("border-2 md:border-4 border-black bg-white shadow-[4px_4px_0_0_rgba(0,0,0,1)] md:shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_rgba(0,0,0,1)]", className)}>
+            <div className="flex flex-row items-center justify-between p-3 pb-1 md:p-6 md:pb-2">
+                <h3 className="font-press-start text-[10px] md:text-sm font-bold uppercase text-black">
                     {title}
                 </h3>
-                {icon && <div className="text-black">{icon}</div>}
+                {icon && <div className="text-black hidden md:block">{icon}</div>}
             </div>
-            <div className="p-6 pt-0">
-                <div className="font-press-start text-2xl font-bold">{value}</div>
+            <div className="p-3 pt-0 md:p-6 md:pt-0">
+                <div className="font-press-start text-lg md:text-2xl font-bold">{value}</div>
                 {(description || trendValue) && (
-                    <p className="font-space-mono text-xs font-bold text-black/70 mt-2 uppercase">
+                    <p className="font-space-mono text-[10px] md:text-xs font-bold text-black/70 mt-1 md:mt-2 uppercase">
                         {trendValue && (
                             <span
                                 className={cn(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ScanlineCanvas, type ScanlineConfig } from "./ScanlineCanvas";
 
 interface CatSlide {
@@ -31,6 +31,15 @@ const SLIDES: CatSlide[] = [
 
 export function HeroCarousel() {
   const [active, setActive] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const goTo = useCallback((idx: number) => {
     setActive(idx);
@@ -42,6 +51,10 @@ export function HeroCarousel() {
   }, []);
 
   const slide = SLIDES[active];
+  // On mobile, shift cat left (positive offsetX = content moves left in UV space)
+  const mergedConfig = isMobile
+    ? { offsetX: 0.0, ...slide.config }
+    : slide.config;
 
   return (
     <>
@@ -51,10 +64,10 @@ export function HeroCarousel() {
       ))}
 
       {/* Canvas — single instance, hot-swaps video source */}
-      <div className="absolute inset-0 hidden md:block">
+      <div className="absolute inset-0">
         <ScanlineCanvas
           videoSrc={slide.videoSrc}
-          config={slide.config}
+          config={mergedConfig}
           onVideoEnd={handleVideoEnd}
           className="w-full h-full"
         />

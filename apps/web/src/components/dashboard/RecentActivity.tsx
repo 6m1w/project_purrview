@@ -54,7 +54,7 @@ export function RecentActivity({ events }: RecentActivityProps) {
                     <div className="space-y-6">
                         {events.map((event) => {
                             const color = CAT_COLORS[event.cat_name] ?? "#6b7280";
-                            const firstChar = event.cat_name.charAt(0);
+                            const lastChar = event.cat_name.charAt(event.cat_name.length - 1);
 
                             return (
                                 <div key={event.id} className="flex items-center group">
@@ -64,7 +64,7 @@ export function RecentActivity({ events }: RecentActivityProps) {
                                         style={{ backgroundColor: color }}
                                     >
                                         <span className="font-vt323 text-2xl text-white drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]">
-                                            {firstChar}
+                                            {lastChar}
                                         </span>
                                     </div>
                                     <div className="ml-4 space-y-1 min-w-0">

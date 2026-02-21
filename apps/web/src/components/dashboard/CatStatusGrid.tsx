@@ -48,7 +48,7 @@ export function CatStatusGrid({ statuses }: CatStatusGridProps) {
             <div className="grid gap-6 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
                 {statuses.map((cat) => {
                     const color = CAT_COLORS[cat.name] ?? "#6b7280";
-                    const firstChar = cat.name.charAt(0);
+                    const lastChar = cat.name.charAt(cat.name.length - 1);
                     const hasActivity = cat.lastTime !== "";
 
                     return (
@@ -62,7 +62,7 @@ export function CatStatusGrid({ statuses }: CatStatusGridProps) {
                                 style={{ backgroundColor: color }}
                             >
                                 <span className="font-vt323 text-4xl text-white drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]">
-                                    {firstChar}
+                                    {lastChar}
                                 </span>
                             </div>
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { VT323, Space_Mono, Pixelify_Sans } from "next/font/google";
+import { VT323, Space_Mono, Pixelify_Sans, Noto_Sans_SC } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
@@ -18,6 +18,12 @@ const spaceMono = Space_Mono({
 const pixelifySans = Pixelify_Sans({
   weight: ["400", "500", "600", "700"],
   variable: "--font-press-start",
+  subsets: ["latin"],
+});
+
+const notoSansSC = Noto_Sans_SC({
+  weight: ["400", "500", "700"],
+  variable: "--font-noto-sc",
   subsets: ["latin"],
 });
 
@@ -41,7 +47,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${vt323.variable} ${spaceMono.variable} ${pixelifySans.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
+        className={`${vt323.variable} ${spaceMono.variable} ${pixelifySans.variable} ${notoSansSC.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
       >
         <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)]">
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-6">

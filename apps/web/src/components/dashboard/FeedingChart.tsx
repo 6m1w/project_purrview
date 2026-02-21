@@ -54,7 +54,7 @@ function CatBarChart({
                     />
                     <Tooltip
                         contentStyle={{
-                            fontFamily: "var(--font-space-mono)",
+                            fontFamily: "var(--font-noto-sc), var(--font-space-mono)",
                             fontWeight: "bold",
                             border: "3px solid #000",
                             borderRadius: 0,
@@ -63,10 +63,9 @@ function CatBarChart({
                     />
                     <Legend
                         wrapperStyle={{
-                            fontFamily: "var(--font-space-mono)",
+                            fontFamily: "var(--font-noto-sc), var(--font-space-mono)",
                             fontWeight: "bold",
                             fontSize: 14,
-                            textTransform: "uppercase",
                         }}
                     />
                     {CAT_NAMES.map((cat) => (

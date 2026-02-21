@@ -61,7 +61,7 @@ export function RecentActivity({ events }: RecentActivityProps) {
                                     </div>
                                     <div className="ml-4 space-y-1 min-w-0">
                                         <p className="text-sm font-space-mono font-bold leading-none flex items-center gap-2 uppercase">
-                                            {event.cat_name}
+                                            <span className="font-[family-name:var(--font-noto-sc)]">{event.cat_name}</span>
                                             <span className="text-black/70">
                                                 {getActivityLabel(event.activity)}
                                             </span>

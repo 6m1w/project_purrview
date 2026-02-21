@@ -59,7 +59,7 @@ export function CatStatusGrid({ statuses }: CatStatusGridProps) {
                             </div>
 
                             {/* Cat name */}
-                            <p className="font-vt323 text-3xl uppercase tracking-widest text-black">
+                            <p className="font-[family-name:var(--font-noto-sc)] text-lg font-bold text-black">
                                 {cat.name}
                             </p>
 

@@ -23,7 +23,7 @@ export function MetricCard({
     return (
         <div className={cn("border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_rgba(0,0,0,1)]", className)}>
             <div className="flex flex-row items-center justify-between p-6 pb-2">
-                <h3 className="font-space-mono text-sm font-bold uppercase text-black">
+                <h3 className="font-press-start text-[10px] uppercase text-black">
                     {title}
                 </h3>
                 {icon && <div className="text-black">{icon}</div>}

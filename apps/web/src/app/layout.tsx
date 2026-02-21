@@ -45,7 +45,7 @@ export default function RootLayout({
       >
         <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)]">
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-6">
-            <Link href="/" className="text-4xl font-vt323 tracking-widest uppercase hover:text-[#FF5722] transition-colors">
+            <Link href="/" className="font-press-start text-sm uppercase hover:text-[#FF5722] transition-colors">
               PurrView
             </Link>
             <nav className="flex gap-4">
@@ -53,7 +53,7 @@ export default function RootLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="border-2 border-black bg-white px-4 py-1 flex items-center text-sm font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
+                  className="border-2 border-black bg-white px-4 py-1 flex items-center font-press-start text-[10px] uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
                 >
                   {item.label}
                 </Link>

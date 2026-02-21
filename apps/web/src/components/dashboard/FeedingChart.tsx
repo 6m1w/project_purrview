@@ -24,7 +24,7 @@ export function FeedingChart({ data }: FeedingChartProps) {
     return (
         <div className="col-span-7 border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] flex flex-col">
             <div className="p-6 border-b-4 border-black bg-[#f4f4f0]">
-                <h3 className="font-vt323 text-4xl uppercase tracking-widest text-black">
+                <h3 className="font-press-start text-sm uppercase text-black">
                     Weekly Activity
                 </h3>
                 <p className="font-space-mono text-sm font-bold uppercase text-black/70">

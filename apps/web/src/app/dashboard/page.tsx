@@ -1,0 +1,70 @@
+import { getTodayStats, getWeeklyTrend, getRecentEvents, getCatStatuses } from "@/lib/queries";
+import { MetricCard } from "@/components/dashboard/MetricCard";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { FeedingChart } from "@/components/dashboard/FeedingChart";
+import { CatStatusGrid } from "@/components/dashboard/CatStatusGrid";
+import { Utensils, Cat, Droplets, Clock } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+export const dynamic = "force-dynamic";
+
+export default async function Dashboard() {
+    const [stats, trend, events, catStatuses] = await Promise.all([
+        getTodayStats(),
+        getWeeklyTrend(),
+        getRecentEvents(),
+        getCatStatuses(),
+    ]);
+
+    // Format "last signal" as relative time
+    const lastSignal = stats.lastEventTime
+        ? formatDistanceToNow(new Date(stats.lastEventTime), { addSuffix: true })
+        : "No data";
+
+    return (
+        <div className="flex flex-col space-y-8 p-4 pt-6 max-w-[1600px] mx-auto">
+            <section id="dashboard" className="flex flex-col space-y-4">
+                <div className="flex items-center justify-between border-b-4 border-black pb-2">
+                    <h2 className="font-vt323 text-5xl font-bold uppercase tracking-widest">Command Center</h2>
+                    <div className="font-space-mono text-sm font-bold bg-black text-[#00FF66] px-4 py-1 border-2 border-black">
+                        SYSTEM.ONLINE
+                    </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                    <MetricCard
+                        title="FEEDINGS"
+                        value={stats.feedingCount}
+                        description="Eating events today"
+                        icon={<Utensils className="h-6 w-6" />}
+                    />
+                    <MetricCard
+                        title="ACTIVE CATS"
+                        value={stats.activeCats}
+                        description="Cats detected today"
+                        icon={<Cat className="h-6 w-6" />}
+                    />
+                    <MetricCard
+                        title="WATER EVENTS"
+                        value={stats.drinkingCount}
+                        description="Drinking events today"
+                        icon={<Droplets className="h-6 w-6" />}
+                    />
+                    <MetricCard
+                        title="LAST SIGNAL"
+                        value={lastSignal}
+                        description="Time since last relay"
+                        icon={<Clock className="h-6 w-6" />}
+                    />
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-10">
+                    <FeedingChart data={trend} />
+                    <RecentActivity events={events} />
+                </div>
+
+                <CatStatusGrid statuses={catStatuses} />
+            </section>
+        </div>
+    );
+}

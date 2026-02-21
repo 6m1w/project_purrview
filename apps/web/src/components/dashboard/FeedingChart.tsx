@@ -1,77 +1,97 @@
-"use client"
+"use client";
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MOCK_CATS, MOCK_FEEDING_EVENTS } from "@/lib/mock"
+import {
+    Bar,
+    BarChart,
+    ResponsiveContainer,
+    XAxis,
+    YAxis,
+    Tooltip,
+    Legend,
+} from "recharts";
 
-export function FeedingChart() {
-    // Aggregate data for the chart (mock logic for now)
-    // In a real app, this would process the actual events
-    const data = [
-        {
-            name: "Mon",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Tue",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Wed",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Thu",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Fri",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Sat",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-        {
-            name: "Sun",
-            total: Math.floor(Math.random() * 200) + 100,
-        },
-    ]
+interface FeedingChartProps {
+    data: { date: string; eating: number; drinking: number }[];
+}
+
+export function FeedingChart({ data }: FeedingChartProps) {
+    // Format date labels as MM/DD
+    const chartData = data.map((d) => ({
+        ...d,
+        label: d.date.slice(5), // "YYYY-MM-DD" -> "MM-DD"
+    }));
 
     return (
-        <Card className="col-span-4">
-            <CardHeader>
-                <CardTitle>Food Consumption</CardTitle>
-                <CardDescription>
-                    Total food intake per day (grams).
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="pl-2">
+        <div className="col-span-7 border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] flex flex-col">
+            <div className="p-6 border-b-4 border-black bg-[#f4f4f0]">
+                <h3 className="font-vt323 text-4xl uppercase tracking-widest text-black">
+                    Weekly Activity
+                </h3>
+                <p className="font-space-mono text-sm font-bold uppercase text-black/70">
+                    Eating &amp; drinking events per day (last 7 days).
+                </p>
+            </div>
+            <div className="p-6 pl-2 flex-grow bg-white">
                 <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={data}>
+                    <BarChart data={chartData}>
                         <XAxis
-                            dataKey="name"
-                            stroke="#888888"
+                            dataKey="label"
+                            stroke="#000"
                             fontSize={12}
                             tickLine={false}
-                            axisLine={false}
+                            axisLine={true}
+                            style={{
+                                fontFamily: "var(--font-space-mono)",
+                                fontWeight: "bold",
+                            }}
                         />
                         <YAxis
-                            stroke="#888888"
+                            stroke="#000"
                             fontSize={12}
                             tickLine={false}
-                            axisLine={false}
-                            tickFormatter={(value) => `${value}g`}
+                            axisLine={true}
+                            allowDecimals={false}
+                            style={{
+                                fontFamily: "var(--font-space-mono)",
+                                fontWeight: "bold",
+                            }}
+                        />
+                        <Tooltip
+                            contentStyle={{
+                                fontFamily: "var(--font-space-mono)",
+                                fontWeight: "bold",
+                                border: "3px solid #000",
+                                borderRadius: 0,
+                                backgroundColor: "#f4f4f0",
+                            }}
+                        />
+                        <Legend
+                            wrapperStyle={{
+                                fontFamily: "var(--font-space-mono)",
+                                fontWeight: "bold",
+                                fontSize: 12,
+                                textTransform: "uppercase",
+                            }}
                         />
                         <Bar
-                            dataKey="total"
-                            fill="currentColor"
-                            radius={[4, 4, 0, 0]}
-                            className="fill-primary"
+                            dataKey="eating"
+                            name="Eating"
+                            stackId="a"
+                            fill="#FF5722"
+                            stroke="#000"
+                            strokeWidth={2}
+                        />
+                        <Bar
+                            dataKey="drinking"
+                            name="Drinking"
+                            stackId="a"
+                            fill="#3b82f6"
+                            stroke="#000"
+                            strokeWidth={2}
                         />
                     </BarChart>
                 </ResponsiveContainer>
-            </CardContent>
-        </Card>
-    )
+            </div>
+        </div>
+    );
 }

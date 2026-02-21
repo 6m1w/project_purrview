@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { VT323, Space_Mono, Press_Start_2P } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const vt323 = VT323({
+  weight: "400",
+  variable: "--font-vt323",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceMono = Space_Mono({
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+});
+
+const pressStart2P = Press_Start_2P({
+  weight: "400",
+  variable: "--font-press-start",
   subsets: ["latin"],
 });
 
@@ -19,10 +27,10 @@ export const metadata: Metadata = {
 };
 
 const navItems = [
-  { href: "/", label: "Overview" },
-  { href: "/cats", label: "Cats" },
-  { href: "/timeline", label: "Timeline" },
-  { href: "/reports", label: "Reports" },
+  { href: "/", label: "HOME" },
+  { href: "/dashboard", label: "DASHBOARD" },
+  { href: "/cats", label: "CATS" },
+  { href: "/timeline", label: "TIMELINE" },
 ];
 
 export default function RootLayout({
@@ -33,19 +41,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-50 dark:bg-zinc-950`}
+        className={`${vt323.variable} ${spaceMono.variable} ${pressStart2P.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
       >
-        <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur dark:bg-zinc-950/80 dark:border-zinc-800">
-          <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-            <Link href="/" className="text-lg font-bold tracking-tight">
+        <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)]">
+          <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-6">
+            <Link href="/" className="text-4xl font-vt323 tracking-widest uppercase hover:text-[#FF5722] transition-colors">
               PurrView
             </Link>
-            <nav className="flex gap-1">
+            <nav className="flex gap-4">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="rounded-md px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                  className="border-2 border-black bg-white px-4 py-1 flex items-center text-sm font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
                 >
                   {item.label}
                 </Link>
@@ -53,7 +61,7 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <main className="w-full flex-grow">{children}</main>
       </body>
     </html>
   );

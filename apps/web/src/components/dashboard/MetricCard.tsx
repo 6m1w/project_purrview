@@ -21,23 +21,23 @@ export function MetricCard({
     className,
 }: MetricCardProps) {
     return (
-        <Card className={cn("shadow-sm", className)}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+        <div className={cn("border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)] transition-transform hover:-translate-y-1 hover:shadow-[12px_12px_0_0_rgba(0,0,0,1)]", className)}>
+            <div className="flex flex-row items-center justify-between p-6 pb-2">
+                <h3 className="font-space-mono text-sm font-bold uppercase text-black">
                     {title}
-                </CardTitle>
-                {icon && <div className="text-muted-foreground">{icon}</div>}
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">{value}</div>
+                </h3>
+                {icon && <div className="text-black">{icon}</div>}
+            </div>
+            <div className="p-6 pt-0">
+                <div className="font-vt323 text-5xl tracking-widest">{value}</div>
                 {(description || trendValue) && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="font-space-mono text-xs font-bold text-black/70 mt-2 uppercase">
                         {trendValue && (
                             <span
                                 className={cn(
-                                    "mr-1 font-medium",
-                                    trend === "up" && "text-emerald-600",
-                                    trend === "down" && "text-red-600"
+                                    "mr-2 px-1 border-2 border-black",
+                                    trend === "up" && "bg-[#00FF66] text-black",
+                                    trend === "down" && "bg-[#FF5722] text-black"
                                 )}
                             >
                                 {trendValue}
@@ -46,7 +46,7 @@ export function MetricCard({
                         {description}
                     </p>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     );
 }

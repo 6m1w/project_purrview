@@ -39,6 +39,9 @@ export type Database = {
           estimated_portion: string | null;
           confidence: number | null;
           notes: string | null;
+          activity: string | null;
+          cat_name: string | null;
+          duration_seconds: number | null;
           created_at: string;
         };
         Insert: {
@@ -52,6 +55,9 @@ export type Database = {
           estimated_portion?: string | null;
           confidence?: number | null;
           notes?: string | null;
+          activity?: string | null;
+          cat_name?: string | null;
+          duration_seconds?: number | null;
           created_at?: string;
         };
         Update: {
@@ -65,6 +71,9 @@ export type Database = {
           estimated_portion?: string | null;
           confidence?: number | null;
           notes?: string | null;
+          activity?: string | null;
+          cat_name?: string | null;
+          duration_seconds?: number | null;
           created_at?: string;
         };
       };

@@ -1,57 +1,92 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MOCK_CATS, FeedingEvent } from "@/lib/mock";
+import type { RecentEvent } from "@/lib/queries";
 import { formatDistanceToNow } from "date-fns";
-import { Utensils, Droplets } from "lucide-react";
+import { Utensils, Droplets, Eye } from "lucide-react";
+
+// Cat color mapping
+const CAT_COLORS: Record<string, string> = {
+    "\u5927\u5409": "#f59e0b", // 大吉
+    "\u5c0f\u6162": "#3b82f6", // 小慢
+    "\u9ebb\u9171": "#d97706", // 麻酱
+    "\u677e\u82b1": "#22c55e", // 松花
+    "\u5c0f\u9ed1": "#8b5cf6", // 小黑
+};
+
+function getActivityIcon(activity: string) {
+    switch (activity) {
+        case "eating":
+            return <Utensils className="h-3 w-3 text-black" />;
+        case "drinking":
+            return <Droplets className="h-3 w-3 text-black" />;
+        default:
+            return <Eye className="h-3 w-3 text-black" />;
+    }
+}
+
+function getActivityLabel(activity: string) {
+    switch (activity) {
+        case "eating":
+            return "ate";
+        case "drinking":
+            return "drank";
+        default:
+            return "seen";
+    }
+}
 
 interface RecentActivityProps {
-    events: FeedingEvent[];
+    events: RecentEvent[];
 }
 
 export function RecentActivity({ events }: RecentActivityProps) {
     return (
-        <Card className="col-span-3">
-            <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-8">
-                    {events.map((event) => {
-                        const cat = MOCK_CATS.find((c) => c.id === event.catId);
-                        if (!cat) return null;
+        <div className="col-span-3 border-4 border-black bg-white shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
+            <div className="p-6 border-b-4 border-black bg-[#f4f4f0]">
+                <h3 className="font-vt323 text-4xl uppercase tracking-widest text-black">
+                    Activity Log
+                </h3>
+            </div>
+            <div className="p-6">
+                {events.length === 0 ? (
+                    <p className="font-space-mono text-sm font-bold uppercase text-black/50 text-center py-8">
+                        No events recorded yet
+                    </p>
+                ) : (
+                    <div className="space-y-6">
+                        {events.map((event) => {
+                            const color = CAT_COLORS[event.cat_name] ?? "#6b7280";
+                            const firstChar = event.cat_name.charAt(0);
 
-                        return (
-                            <div key={event.id} className="flex items-center">
-                                <Avatar className="h-9 w-9">
-                                    <AvatarImage src={cat.avatar} alt={cat.name} />
-                                    <AvatarFallback>{cat.name[0]}</AvatarFallback>
-                                </Avatar>
-                                <div className="ml-4 space-y-1">
-                                    <p className="text-sm font-medium leading-none flex items-center gap-2">
-                                        {cat.name}
-                                        <span className="text-muted-foreground font-normal">
-                                            {event.type === 'water' ? 'drank' : 'ate'}
+                            return (
+                                <div key={event.id} className="flex items-center group">
+                                    {/* Colored square avatar with first char */}
+                                    <div
+                                        className="h-12 w-12 border-2 border-black flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: color }}
+                                    >
+                                        <span className="font-vt323 text-2xl text-white drop-shadow-[1px_1px_0_rgba(0,0,0,0.5)]">
+                                            {firstChar}
                                         </span>
-                                        {event.type === 'water' ? (
-                                            <Droplets className="h-3 w-3 text-blue-500" />
-                                        ) : (
-                                            <Utensils className="h-3 w-3 text-orange-500" />
-                                        )}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {formatDistanceToNow(new Date(event.timestamp), {
-                                            addSuffix: true,
-                                        })}
-                                    </p>
+                                    </div>
+                                    <div className="ml-4 space-y-1 min-w-0">
+                                        <p className="text-sm font-space-mono font-bold leading-none flex items-center gap-2 uppercase">
+                                            {event.cat_name}
+                                            <span className="text-black/70">
+                                                {getActivityLabel(event.activity)}
+                                            </span>
+                                            {getActivityIcon(event.activity)}
+                                        </p>
+                                        <p className="font-vt323 text-xl leading-none text-black/70 uppercase tracking-wider">
+                                            {formatDistanceToNow(new Date(event.started_at), {
+                                                addSuffix: true,
+                                            })}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="ml-auto font-medium">
-                                    +{event.amount}{event.type === 'water' ? 'ml' : 'g'}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </CardContent>
-        </Card>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

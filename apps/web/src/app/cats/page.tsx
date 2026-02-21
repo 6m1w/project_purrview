@@ -1,22 +1,15 @@
-import { MOCK_CATS } from "@/lib/mock";
-import { CatCard } from "@/components/dashboard/CatCard";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Cat } from "lucide-react";
 
 export default function CatsPage() {
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">My Cats</h2>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> Add Cat
-        </Button>
-      </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {MOCK_CATS.map((cat) => (
-          <CatCard key={cat.id} cat={cat} />
-        ))}
-      </div>
+    <div className="flex-1 flex flex-col items-center justify-center p-8 gap-6">
+      <Cat className="h-16 w-16" />
+      <h2 className="font-vt323 text-5xl uppercase tracking-widest">
+        Cat Profiles
+      </h2>
+      <p className="font-space-mono text-sm font-bold uppercase text-black/50">
+        Coming soon — individual cat stats &amp; history
+      </p>
     </div>
   );
 }

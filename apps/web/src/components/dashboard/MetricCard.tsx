@@ -29,7 +29,7 @@ export function MetricCard({
                 {icon && <div className="text-black">{icon}</div>}
             </div>
             <div className="p-6 pt-0">
-                <div className="font-press-start text-3xl font-bold">{value}</div>
+                <div className="font-press-start text-2xl font-bold">{value}</div>
                 {(description || trendValue) && (
                     <p className="font-space-mono text-xs font-bold text-black/70 mt-2 uppercase">
                         {trendValue && (

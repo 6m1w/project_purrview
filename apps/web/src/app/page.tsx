@@ -8,14 +8,12 @@ export default function Home() {
       {/* Left side — title, subtitle, CTA */}
       <div className="relative z-10 flex w-full flex-col gap-8 px-8 md:w-[45%] md:px-12 lg:px-16">
         <h1 className="font-press-start text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.4] tracking-tight uppercase">
-          Purr
-          <br />
-          View
+          PurrView
         </h1>
 
         <p className="font-space-mono text-sm md:text-base leading-relaxed max-w-md">
-          Your personal AI cat monitor, tracking meals and making smarter
-          decisions for your feline family.
+          Lin&apos;s AI cat monitor for 5 happy house cats, tracking meals and
+          making smarter decisions for your feline family.
         </p>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">

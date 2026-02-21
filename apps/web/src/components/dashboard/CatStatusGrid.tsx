@@ -80,7 +80,7 @@ export function CatStatusGrid({ statuses }: CatStatusGridProps) {
                             </div>
 
                             {/* Relative time */}
-                            <p className="font-space-mono text-xs font-bold text-black/50 uppercase">
+                            <p className="font-press-start text-[10px] text-black/50 uppercase">
                                 {hasActivity
                                     ? formatDistanceToNow(new Date(cat.lastTime), {
                                           addSuffix: true,

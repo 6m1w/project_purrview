@@ -75,7 +75,7 @@ export function RecentActivity({ events }: RecentActivityProps) {
                                             </span>
                                             {getActivityIcon(event.activity)}
                                         </p>
-                                        <p className="font-vt323 text-xl leading-none text-black/70 uppercase tracking-wider">
+                                        <p className="font-press-start text-[10px] leading-none text-black/50 uppercase">
                                             {formatDistanceToNow(new Date(event.started_at), {
                                                 addSuffix: true,
                                             })}

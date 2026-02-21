@@ -53,7 +53,7 @@ export default function RootLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="border-2 border-black bg-white px-4 py-1 flex items-center font-press-start text-xs font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
+                  className="border-2 border-black bg-white px-5 py-2 flex items-center font-press-start text-sm font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
                 >
                   {item.label}
                 </Link>

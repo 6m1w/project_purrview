@@ -1,5 +1,7 @@
 # PurrView
 
+**English | [中文](./README_CN.md)**
+
 **AI-powered care for 5 beloved rescue cats.**
 
 An open-source monitoring system that watches over 5 rescue cats — tracking every meal, sip, and visit with computer vision and Gemini AI, so they never miss a beat.

@@ -4,14 +4,14 @@ import { HeroCarousel } from "@/components/HeroCarousel";
 
 export default function Home() {
   return (
-    <section className="flex flex-col h-[calc(100dvh-8rem)] md:relative md:flex-row md:h-auto md:min-h-[calc(100vh-4rem)] md:items-center overflow-hidden">
+    <section className="flex flex-col h-[calc(100dvh-8.5rem)] md:relative md:flex-row md:h-auto md:min-h-[calc(100vh-4rem)] md:items-center overflow-hidden">
       {/* Canvas: flex-grows to fill remaining space on mobile, absolute on desktop */}
       <div className="relative flex-1 min-h-0 md:absolute md:inset-0 md:flex-none">
         <HeroCarousel />
       </div>
 
       {/* Text content: keeps natural height on mobile, left-aligned on desktop */}
-      <div className="relative z-10 shrink-0 flex w-full flex-col gap-4 px-10 pt-4 pb-4 md:shrink md:gap-8 md:py-0 md:w-[45%] md:px-12 lg:px-16">
+      <div className="relative z-10 shrink-0 flex w-full flex-col gap-4 px-10 py-5 md:shrink md:gap-8 md:py-0 md:w-[45%] md:px-12 lg:px-16">
         {/* Scanline overlay — mobile only, matches canvas aesthetic */}
         <div
           className="absolute inset-0 pointer-events-none md:hidden"

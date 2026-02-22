@@ -11,7 +11,7 @@ export default function Home() {
           PurrView
         </h1>
 
-        <p className="font-space-mono text-xs md:text-sm font-bold leading-relaxed max-w-md">
+        <p className="font-space-mono text-sm md:text-base font-bold leading-relaxed max-w-md">
           5 cats. Every meal tracked. Zero guesswork.
         </p>
 

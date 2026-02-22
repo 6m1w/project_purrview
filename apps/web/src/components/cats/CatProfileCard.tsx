@@ -48,7 +48,7 @@ export function CatProfileCard({ profile }: CatProfileCardProps) {
           {profile.name}
         </h3>
         {CAT_BIOS[profile.name] && (
-          <p className="font-space-mono text-xs text-black/60 text-center leading-relaxed -mt-2">
+          <p className="font-space-mono text-sm text-black/60 text-center leading-relaxed -mt-2">
             {CAT_BIOS[profile.name]}
           </p>
         )}

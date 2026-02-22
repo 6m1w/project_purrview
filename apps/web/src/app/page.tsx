@@ -4,9 +4,23 @@ import { HeroCarousel } from "@/components/HeroCarousel";
 
 export default function Home() {
   return (
-    <section className="relative flex min-h-[calc(100vh-4rem)] items-center overflow-hidden">
-      {/* Left side — title, subtitle, CTA */}
-      <div className="relative z-10 flex w-full flex-col gap-8 px-8 py-10 md:py-0 md:w-[45%] md:px-12 lg:px-16">
+    <section className="flex flex-col md:relative md:flex-row md:min-h-[calc(100vh-4rem)] md:items-center overflow-hidden">
+      {/* Canvas area: flows in column on mobile, absolute overlay on desktop */}
+      <div className="relative h-[58vh] shrink-0 md:absolute md:inset-0 md:h-auto">
+        <HeroCarousel />
+      </div>
+
+      {/* Text content: below canvas on mobile, left-aligned on desktop */}
+      <div className="relative z-10 flex w-full flex-col gap-4 px-10 pt-5 pb-2 md:gap-8 md:py-0 md:w-[45%] md:px-12 lg:px-16">
+        {/* Scanline overlay — mobile only, matches canvas aesthetic */}
+        <div
+          className="absolute inset-0 pointer-events-none md:hidden"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(to bottom, transparent, transparent 5px, rgba(0,0,0,0.04) 5px, rgba(0,0,0,0.04) 6px)",
+          }}
+        />
+
         <h1 className="font-press-start text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.4] tracking-tight uppercase">
           PurrView
         </h1>
@@ -15,10 +29,10 @@ export default function Home() {
           5 cats. Every meal tracked. Zero guesswork.
         </p>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-row items-center gap-4">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 border-2 border-black bg-transparent px-6 py-3 font-space-mono text-sm font-bold text-black md:bg-black md:text-[#f4f4f0] transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
+            className="inline-flex items-center gap-2 border-2 border-black bg-black text-[#f4f4f0] px-6 py-3 font-space-mono text-sm font-bold transition-all hover:-translate-y-1 hover:shadow-[6px_6px_0_0_rgba(0,0,0,1)]"
           >
             Dashboard
             <ArrowRight className="h-4 w-4" />
@@ -34,9 +48,6 @@ export default function Home() {
           </a>
         </div>
       </div>
-
-      {/* Scanline canvas carousel with dot indicators */}
-      <HeroCarousel />
     </section>
   );
 }

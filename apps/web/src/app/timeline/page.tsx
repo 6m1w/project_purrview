@@ -33,7 +33,7 @@ export default async function TimelinePage({ searchParams }: TimelinePageProps) 
   if (activity) currentParams.activity = activity;
 
   return (
-    <div className="flex flex-col space-y-6 p-4 pt-6 max-w-[1600px] mx-auto">
+    <div className="flex flex-col space-y-6 p-4 pt-6 pb-20 md:pb-4 max-w-[1600px] mx-auto">
       {/* Page header */}
       <div className="flex items-center justify-between border-b-4 border-black pb-2">
         <h2 className="font-press-start text-2xl md:text-3xl font-bold uppercase">

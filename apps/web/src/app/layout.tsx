@@ -89,7 +89,7 @@ export default function RootLayout({
             <NavBar />
           </div>
         </header>
-        <main className="w-full flex-grow pb-20 md:pb-0">{children}</main>
+        <main className="w-full flex-grow">{children}</main>
       </body>
     </html>
   );

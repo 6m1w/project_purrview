@@ -13,7 +13,7 @@ export default async function CatsPage() {
   const profiles = await getCatProfiles();
 
   return (
-    <div className="flex flex-col space-y-8 p-4 pt-6 max-w-[1600px] mx-auto">
+    <div className="flex flex-col space-y-8 p-4 pt-6 pb-20 md:pb-4 max-w-[1600px] mx-auto">
       <section className="flex flex-col space-y-6">
         {/* Page header — brutalist style matching dashboard */}
         <div className="flex items-center justify-between border-b-4 border-black pb-2">

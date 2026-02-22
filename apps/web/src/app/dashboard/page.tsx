@@ -46,7 +46,7 @@ export default async function Dashboard() {
         : "No data";
 
     return (
-        <div className="flex flex-col space-y-8 p-4 pt-6 max-w-[1600px] mx-auto">
+        <div className="flex flex-col space-y-8 p-4 pt-6 pb-20 md:pb-4 max-w-[1600px] mx-auto">
             {/* Command Center section */}
             <section id="dashboard" className="flex flex-col space-y-4">
                 <div className="flex items-center justify-between border-b-4 border-black pb-2">

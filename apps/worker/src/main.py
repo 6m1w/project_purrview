@@ -48,6 +48,11 @@ def _handle_completed(
         f"[main] Session complete: {session.cat_name} {session.activity} "
         f"({duration:.0f}s, {len(session.frames)} frames)"
     )
+
+    # Filter out single-detection hallucinations (0s duration = only 1 Gemini hit)
+    if duration < 1:
+        print(f"[main] Skipping short session (likely hallucination)")
+        return
     event_id = None
     image_url = None
     try:

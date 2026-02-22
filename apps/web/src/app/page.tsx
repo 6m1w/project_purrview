@@ -11,7 +11,7 @@ export default function Home() {
       </div>
 
       {/* Text content: keeps natural height on mobile, left-aligned on desktop */}
-      <div className="relative z-10 shrink-0 flex w-full flex-col gap-4 px-10 pt-4 pb-2 md:shrink md:gap-8 md:py-0 md:w-[45%] md:px-12 lg:px-16">
+      <div className="relative z-10 shrink-0 flex w-full flex-col gap-4 px-10 pt-4 pb-4 md:shrink md:gap-8 md:py-0 md:w-[45%] md:px-12 lg:px-16">
         {/* Scanline overlay — mobile only, matches canvas aesthetic */}
         <div
           className="absolute inset-0 pointer-events-none md:hidden"

@@ -47,20 +47,13 @@ export const metadata: Metadata = {
     siteName: "PurrView",
     locale: "en_US",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "PurrView — AI care for 5 beloved cats",
-      },
-    ],
+    // og:image auto-injected by src/app/opengraph-image.tsx
   },
   twitter: {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    images: ["/og-image.png"],
+    // twitter:image auto-injected by src/app/opengraph-image.tsx
   },
   keywords: [
     "cat monitor",

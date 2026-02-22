@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import cv2
@@ -24,11 +25,13 @@ def encode_frame_jpeg(frame: np.ndarray, quality: int = 85) -> bytes:
 
 
 def _upload_first_frame(session: FeedingSession, storage: PurrviewStorage, event_id: str) -> str | None:
-    """Upload the first captured frame of a session to Supabase Storage."""
+    """Upload the first captured frame of a session to Supabase Storage and save DB record."""
     for f in session.frames:
         if f.get("frame_bytes"):
             try:
                 url = storage.upload_frame(f["frame_bytes"], event_id)
+                captured_at = datetime.fromtimestamp(f["timestamp"], tz=timezone.utc)
+                storage.save_frame(event_id, url, captured_at)
                 print(f"[main] Uploaded frame -> {url[:80]}...")
                 return url
             except Exception as e:

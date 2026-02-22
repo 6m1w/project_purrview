@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { VT323, Space_Mono, Pixelify_Sans, Noto_Sans_SC } from "next/font/google";
 import Link from "next/link";
+import { NavBar } from "@/components/NavBar";
 import "./globals.css";
 
 const vt323 = VT323({
@@ -32,13 +33,6 @@ export const metadata: Metadata = {
   description: "Monitor your cats' feeding habits with AI-powered analysis",
 };
 
-const navItems = [
-  { href: "/", label: "HOME" },
-  { href: "/dashboard", label: "DASHBOARD" },
-  { href: "/cats", label: "CATS" },
-  { href: "/timeline", label: "TIMELINE" },
-];
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -49,25 +43,15 @@ export default function RootLayout({
       <body
         className={`${vt323.variable} ${spaceMono.variable} ${pixelifySans.variable} ${notoSansSC.variable} font-mono antialiased bg-[#f4f4f0] text-black w-full min-h-screen overflow-x-hidden m-0 p-0`}
       >
-        <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)]">
+        <header className="sticky top-0 z-50 border-b-4 border-black bg-[#f4f4f0] shadow-[0_4px_0_0_rgba(0,0,0,1)] relative">
           <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between px-6">
             <Link href="/" className="font-press-start text-2xl font-bold uppercase hover:text-[#FF5722] transition-colors">
               PurrView
             </Link>
-            <nav className="flex gap-4">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="border-2 border-black bg-white px-5 py-2 flex items-center font-press-start text-sm font-bold uppercase transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0_0_rgba(0,0,0,1)] hover:bg-[#00FF66]"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <NavBar />
           </div>
         </header>
-        <main className="w-full flex-grow">{children}</main>
+        <main className="w-full flex-grow pb-20 md:pb-0">{children}</main>
       </body>
     </html>
   );

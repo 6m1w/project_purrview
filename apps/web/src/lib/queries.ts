@@ -42,6 +42,93 @@ export type CatStatus = {
 // All 5 known cats
 const ALL_CATS = ["大吉", "小慢", "麻酱", "松花", "小黑"];
 
+// Cat headshot mapping (pinyin filename -> Chinese name)
+export const CAT_HEADSHOTS: Record<string, string> = {
+  大吉: "/daji_headshot.jpeg",
+  小慢: "/xiaoman_headshot.jpeg",
+  麻酱: "/majiang_headshot.jpeg",
+  松花: "/songhua_headshot.jpeg",
+  小黑: "/xiaohei_headshot.jpeg",
+};
+
+// One-line cat bios
+export const CAT_BIOS: Record<string, string> = {
+  麻酱: "The OG rescue — a stray-turned-hero-mom who raised a dozen kittens.",
+  松花: "Majiang's son. A big cuddly boy who's also the biggest scaredy-cat.",
+  小黑: "Once hired by a restaurant to hunt mice. Now a retired sun-worshipper.",
+  大吉: "Thinks he's a dog. Best personality in the house, and the biggest appetite.",
+  小慢: "Lost one eye to surgery — only then did her gentle side come through.",
+};
+
+// --- Timeline types ---
+
+export type TimelineEvent = {
+  id: string;
+  cat_name: string;
+  activity: string;
+  started_at: string;
+  duration_seconds: number;
+  thumbnail_url: string | null;
+};
+
+export type PaginatedTimeline = {
+  events: TimelineEvent[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type TimelineFilters = {
+  cat?: string;
+  activity?: string;
+};
+
+// --- Reports types ---
+
+export type MonthlyTrend = {
+  date: string;
+  label: string;
+  eating: number;
+  drinking: number;
+};
+
+export type CatEventCount = {
+  name: string;
+  eating: number;
+  drinking: number;
+};
+
+export type HourlyDistribution = {
+  hour: number;
+  label: string;
+  eating: number;
+  drinking: number;
+};
+
+export type CatAvgDuration = {
+  name: string;
+  avg_seconds: number;
+};
+
+// --- Cat profile types ---
+
+export type CatDailyMini = {
+  date: string;
+  eating: number;
+  drinking: number;
+};
+
+export type CatProfile = {
+  name: string;
+  headshot: string;
+  totalEating: number;
+  totalDrinking: number;
+  avgDuration: number;
+  lastSeen: string | null;
+  trend: CatDailyMini[];
+};
+
 // Row subset types for Supabase .returns<T>() type hints
 type StatsRow = { cat_name: string | null; activity: string | null; started_at: string };
 type TrendRow = { cat_name: string | null; activity: string | null; started_at: string };
@@ -52,6 +139,11 @@ type EventRow = {
   started_at: string;
   duration_seconds: number | null;
 };
+type FrameRow = {
+  feeding_event_id: string;
+  frame_url: string | null;
+};
+type FullEventRow = EventRow & { ended_at: string | null };
 
 // --- Query Functions ---
 
@@ -310,6 +402,355 @@ export async function getCatStatuses(): Promise<CatStatus[]> {
       name,
       lastActivity: "none",
       lastTime: "",
+    };
+  });
+}
+
+// --- Timeline queries ---
+
+/**
+ * Get paginated timeline events with optional cat/activity filters.
+ * Joins first frame thumbnail when available.
+ */
+export async function getTimelineEvents(
+  filters: TimelineFilters = {},
+  page: number = 1,
+  pageSize: number = 20
+): Promise<PaginatedTimeline> {
+  const supabase = getSupabase();
+  const offset = (page - 1) * pageSize;
+
+  // Build filtered query for count
+  let countQuery = supabase
+    .from("purrview_feeding_events")
+    .select("id", { count: "exact", head: true });
+
+  if (filters.cat) countQuery = countQuery.eq("cat_name", filters.cat);
+  if (filters.activity) countQuery = countQuery.eq("activity", filters.activity);
+
+  const { count } = await countQuery;
+  const total = count ?? 0;
+
+  // Build filtered query for data
+  let dataQuery = supabase
+    .from("purrview_feeding_events")
+    .select("id, cat_name, activity, started_at, duration_seconds")
+    .order("started_at", { ascending: false })
+    .range(offset, offset + pageSize - 1);
+
+  if (filters.cat) dataQuery = dataQuery.eq("cat_name", filters.cat);
+  if (filters.activity) dataQuery = dataQuery.eq("activity", filters.activity);
+
+  const { data, error } = await dataQuery.returns<EventRow[]>();
+
+  if (error) {
+    console.error("getTimelineEvents error:", error.message);
+    return { events: [], total: 0, page, pageSize, totalPages: 0 };
+  }
+
+  // Look up frame URLs from Storage bucket (each event_id is a folder with 1 JPEG)
+  const eventIds = (data ?? []).map((e) => e.id);
+  let frameMap: Record<string, string> = {};
+
+  if (eventIds.length > 0) {
+    const results = await Promise.all(
+      eventIds.map(async (eid) => {
+        const { data: files } = await supabase.storage
+          .from("purrview-frames")
+          .list(eid, { limit: 1 });
+        if (files && files.length > 0) {
+          const { data: urlData } = supabase.storage
+            .from("purrview-frames")
+            .getPublicUrl(`${eid}/${files[0].name}`);
+          return { eid, url: urlData.publicUrl };
+        }
+        return null;
+      })
+    );
+    for (const r of results) {
+      if (r) frameMap[r.eid] = r.url;
+    }
+  }
+
+  const events: TimelineEvent[] = (data ?? []).map((row) => ({
+    id: row.id,
+    cat_name: row.cat_name ?? "unknown",
+    activity: row.activity ?? "unknown",
+    started_at: row.started_at,
+    duration_seconds: row.duration_seconds ?? 0,
+    thumbnail_url: frameMap[row.id] ?? null,
+  }));
+
+  return {
+    events,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
+// --- Reports queries ---
+
+/**
+ * Get 30-day daily eating/drinking counts for line chart.
+ */
+export async function getMonthlyTrend(): Promise<MonthlyTrend[]> {
+  const supabase = getSupabase();
+
+  const now = new Date();
+  const startDate = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 29)
+  );
+  const startISO = startDate.toISOString();
+
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("activity, started_at")
+    .gte("started_at", startISO)
+    .order("started_at", { ascending: true })
+    .returns<{ activity: string | null; started_at: string }[]>();
+
+  // Build 30-day map
+  const dayMap: Record<string, { eating: number; drinking: number }> = {};
+  const orderedDates: string[] = [];
+
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(
+      Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate() + i)
+    );
+    const key = d.toISOString().slice(0, 10);
+    dayMap[key] = { eating: 0, drinking: 0 };
+    orderedDates.push(key);
+  }
+
+  if (error) {
+    console.error("getMonthlyTrend error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const dateKey = row.started_at.slice(0, 10);
+      const entry = dayMap[dateKey];
+      if (!entry) continue;
+      if (row.activity === "eating") entry.eating++;
+      else if (row.activity === "drinking") entry.drinking++;
+    }
+  }
+
+  return orderedDates.map((date) => ({
+    date,
+    label: date.slice(5), // MM-DD
+    eating: dayMap[date].eating,
+    drinking: dayMap[date].drinking,
+  }));
+}
+
+/**
+ * Get total event counts per cat (all time), for horizontal stacked bar.
+ */
+export async function getCatEventCounts(): Promise<CatEventCount[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("cat_name, activity")
+    .returns<{ cat_name: string | null; activity: string | null }[]>();
+
+  const countMap: Record<string, { eating: number; drinking: number }> = {};
+  for (const cat of ALL_CATS) {
+    countMap[cat] = { eating: 0, drinking: 0 };
+  }
+
+  if (error) {
+    console.error("getCatEventCounts error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const name = row.cat_name;
+      if (!name || !countMap[name]) continue;
+      if (row.activity === "eating") countMap[name].eating++;
+      else if (row.activity === "drinking") countMap[name].drinking++;
+    }
+  }
+
+  return ALL_CATS.map((name) => ({
+    name,
+    eating: countMap[name].eating,
+    drinking: countMap[name].drinking,
+  }));
+}
+
+/**
+ * Get events bucketed by hour (0-23) for bar chart.
+ */
+export async function getHourlyDistribution(): Promise<HourlyDistribution[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("activity, started_at")
+    .returns<{ activity: string | null; started_at: string }[]>();
+
+  // Initialize 24 hours
+  const hourMap: Record<number, { eating: number; drinking: number }> = {};
+  for (let h = 0; h < 24; h++) {
+    hourMap[h] = { eating: 0, drinking: 0 };
+  }
+
+  if (error) {
+    console.error("getHourlyDistribution error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const hour = new Date(row.started_at).getUTCHours();
+      if (row.activity === "eating") hourMap[hour].eating++;
+      else if (row.activity === "drinking") hourMap[hour].drinking++;
+    }
+  }
+
+  return Array.from({ length: 24 }, (_, h) => ({
+    hour: h,
+    label: `${h.toString().padStart(2, "0")}:00`,
+    eating: hourMap[h].eating,
+    drinking: hourMap[h].drinking,
+  }));
+}
+
+/**
+ * Get average eating/drinking duration per cat.
+ */
+export async function getCatAvgDurations(): Promise<CatAvgDuration[]> {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("cat_name, duration_seconds")
+    .not("duration_seconds", "is", null)
+    .returns<{ cat_name: string | null; duration_seconds: number }[]>();
+
+  const durMap: Record<string, { total: number; count: number }> = {};
+  for (const cat of ALL_CATS) {
+    durMap[cat] = { total: 0, count: 0 };
+  }
+
+  if (error) {
+    console.error("getCatAvgDurations error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const name = row.cat_name;
+      if (!name || !durMap[name]) continue;
+      durMap[name].total += row.duration_seconds;
+      durMap[name].count++;
+    }
+  }
+
+  return ALL_CATS.map((name) => ({
+    name,
+    avg_seconds: durMap[name].count > 0
+      ? Math.round(durMap[name].total / durMap[name].count)
+      : 0,
+  }));
+}
+
+/**
+ * Get full cat profiles with stats and 7-day mini trend.
+ */
+export async function getCatProfiles(): Promise<CatProfile[]> {
+  const supabase = getSupabase();
+
+  const now = new Date();
+  const weekAgo = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6)
+  );
+
+  // Fetch all events (we need all-time stats + 7-day trend)
+  const { data, error } = await supabase
+    .from("purrview_feeding_events")
+    .select("cat_name, activity, started_at, duration_seconds")
+    .order("started_at", { ascending: false })
+    .returns<EventRow[]>();
+
+  // Initialize per-cat accumulators
+  const profileMap: Record<
+    string,
+    {
+      totalEating: number;
+      totalDrinking: number;
+      totalDuration: number;
+      durationCount: number;
+      lastSeen: string | null;
+      trendMap: Record<string, { eating: number; drinking: number }>;
+    }
+  > = {};
+
+  // Build 7-day date keys
+  const trendDates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(
+      Date.UTC(weekAgo.getUTCFullYear(), weekAgo.getUTCMonth(), weekAgo.getUTCDate() + i)
+    );
+    trendDates.push(d.toISOString().slice(0, 10));
+  }
+
+  for (const cat of ALL_CATS) {
+    const trendMap: Record<string, { eating: number; drinking: number }> = {};
+    for (const date of trendDates) {
+      trendMap[date] = { eating: 0, drinking: 0 };
+    }
+    profileMap[cat] = {
+      totalEating: 0,
+      totalDrinking: 0,
+      totalDuration: 0,
+      durationCount: 0,
+      lastSeen: null,
+      trendMap,
+    };
+  }
+
+  if (error) {
+    console.error("getCatProfiles error:", error.message);
+  } else if (data) {
+    for (const row of data) {
+      const name = row.cat_name;
+      if (!name || !profileMap[name]) continue;
+
+      const p = profileMap[name];
+
+      if (row.activity === "eating") p.totalEating++;
+      else if (row.activity === "drinking") p.totalDrinking++;
+
+      if (row.duration_seconds != null) {
+        p.totalDuration += row.duration_seconds;
+        p.durationCount++;
+      }
+
+      // Since ordered DESC, first occurrence is most recent
+      if (!p.lastSeen) p.lastSeen = row.started_at;
+
+      // 7-day trend
+      const dateKey = row.started_at.slice(0, 10);
+      const trendEntry = p.trendMap[dateKey];
+      if (trendEntry) {
+        if (row.activity === "eating") trendEntry.eating++;
+        else if (row.activity === "drinking") trendEntry.drinking++;
+      }
+    }
+  }
+
+  return ALL_CATS.map((name) => {
+    const p = profileMap[name];
+    return {
+      name,
+      headshot: CAT_HEADSHOTS[name] ?? "",
+      totalEating: p.totalEating,
+      totalDrinking: p.totalDrinking,
+      avgDuration:
+        p.durationCount > 0
+          ? Math.round(p.totalDuration / p.durationCount)
+          : 0,
+      lastSeen: p.lastSeen,
+      trend: trendDates.map((date) => ({
+        date,
+        eating: p.trendMap[date].eating,
+        drinking: p.trendMap[date].drinking,
+      })),
     };
   });
 }

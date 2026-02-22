@@ -1,15 +1,31 @@
-import { Cat } from "lucide-react";
+import { getCatProfiles } from "@/lib/queries";
+import { CatProfileCard } from "@/components/cats/CatProfileCard";
 
-export default function CatsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CatsPage() {
+  const profiles = await getCatProfiles();
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 gap-6">
-      <Cat className="h-16 w-16" />
-      <h2 className="font-vt323 text-5xl uppercase tracking-widest">
-        Cat Profiles
-      </h2>
-      <p className="font-space-mono text-sm font-bold uppercase text-black/50">
-        Coming soon — individual cat stats &amp; history
-      </p>
+    <div className="flex flex-col space-y-8 p-4 pt-6 max-w-[1600px] mx-auto">
+      <section className="flex flex-col space-y-6">
+        {/* Page header — brutalist style matching dashboard */}
+        <div className="flex items-center justify-between border-b-4 border-black pb-2">
+          <h2 className="font-press-start text-2xl md:text-3xl font-bold uppercase">
+            Cat Profiles
+          </h2>
+          <div className="font-press-start text-sm font-bold bg-black text-[#00FF66] px-3 py-1.5 border-2 border-black">
+            5 CATS
+          </div>
+        </div>
+
+        {/* Profile cards grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {profiles.map((profile) => (
+            <CatProfileCard key={profile.name} profile={profile} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -11,7 +11,7 @@ An open-source monitoring system that watches over 5 rescue cats — tracking ev
 </p>
 
 <p align="center">
-  <a href="https://purrview.vercel.app">Live Dashboard</a> · <a href="#architecture">Architecture</a> · <a href="#getting-started">Getting Started</a>
+  <a href="https://purrview.dev">Live Dashboard</a> · <a href="#architecture">Architecture</a> · <a href="#getting-started">Getting Started</a>
 </p>
 
 ---

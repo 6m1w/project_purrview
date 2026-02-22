@@ -28,7 +28,7 @@ const notoSansSC = Noto_Sans_SC({
   subsets: ["latin"],
 });
 
-const SITE_URL = "https://purrview.vercel.app";
+const SITE_URL = "https://purrview.dev";
 const TITLE = "PurrView — AI-Powered Care for 5 Beloved Cats";
 const DESCRIPTION =
   "An open-source AI dashboard that watches over 5 rescue cats — tracking every meal, sip, and visit with computer vision and Gemini, so they never miss a beat.";

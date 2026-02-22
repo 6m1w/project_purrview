@@ -20,6 +20,7 @@ class FeedingSession:
     started_at: float                   # unix timestamp
     last_seen_at: float                 # unix timestamp
     frames: list[dict] = field(default_factory=list)
+    max_motion_score: float = 0.0
 
 
 class SessionTracker:
@@ -64,9 +65,12 @@ class SessionTracker:
                     del self.sessions[name]
                     existing = None
 
+                motion = frame_info.get("motion_score", 0) if frame_info else 0
+
                 if existing:
                     # Continue existing session
                     existing.last_seen_at = timestamp
+                    existing.max_motion_score = max(existing.max_motion_score, motion)
                     if frame_info:
                         existing.frames.append(frame_info)
                 else:
@@ -76,6 +80,7 @@ class SessionTracker:
                         activity=activity.value,
                         started_at=timestamp,
                         last_seen_at=timestamp,
+                        max_motion_score=motion,
                     )
                     if frame_info:
                         session.frames.append(frame_info)

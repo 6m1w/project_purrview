@@ -108,7 +108,7 @@ def run() -> None:
                 try:
                     result = analyzer.analyze_frame(frame_bytes)
                     if result.cats_present:
-                        frame_info = {"timestamp": now, "frame_bytes": frame_bytes}
+                        frame_info = {"timestamp": now, "frame_bytes": frame_bytes, "motion_score": motion_score}
                         completed = tracker.on_analysis(result, now, frame_info)
                         for session in completed:
                             _handle_completed(session, storage, notifier)

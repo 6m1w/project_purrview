@@ -68,6 +68,7 @@ class PurrviewStorage:
                     session.last_seen_at, tz=timezone.utc
                 ).isoformat(),
                 "duration_seconds": round(duration, 1),
+                "motion_score_max": session.max_motion_score or None,
                 "confidence": None,
                 "notes": None,
             }

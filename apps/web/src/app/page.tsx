@@ -24,12 +24,14 @@ export default function Home() {
             <ArrowRight className="h-4 w-4" />
           </Link>
 
-          <Link
-            href="#how-it-works"
+          <a
+            href="https://github.com/6m1w/project_purrview"
+            target="_blank"
+            rel="noopener noreferrer"
             className="font-space-mono text-sm font-bold transition-colors hover:text-neutral-500"
           >
             See How It Works &gt;
-          </Link>
+          </a>
         </div>
       </div>
 

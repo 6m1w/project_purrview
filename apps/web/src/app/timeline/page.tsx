@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+
+export const metadata: Metadata = {
+  title: "Timeline",
+  description: "Browse every feeding and drinking event with filters by cat and activity type.",
+};
 import { getTimelineEvents } from "@/lib/queries";
 import { TimelineFilters } from "@/components/timeline/TimelineFilters";
 import { TimelineList } from "@/components/timeline/TimelineList";

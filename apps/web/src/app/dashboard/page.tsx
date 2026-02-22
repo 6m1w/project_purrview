@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
     getTodayStats,
     getWeeklyTrendByCat,
@@ -18,6 +19,11 @@ import { HourlyChart } from "@/components/reports/HourlyChart";
 import { DurationChart } from "@/components/reports/DurationChart";
 import { Utensils, Cat, Droplets, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+
+export const metadata: Metadata = {
+    title: "Dashboard",
+    description: "Real-time feeding stats, weekly trends, and analytics for 5 rescue cats monitored by AI.",
+};
 
 export const dynamic = "force-dynamic";
 

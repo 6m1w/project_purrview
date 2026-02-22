@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { getCatProfiles } from "@/lib/queries";
+
+export const metadata: Metadata = {
+  title: "Cat Profiles",
+  description: "Meet the 5 rescue cats — Majiang, Songhua, Xiaohei, Daji, and Xiaoman — with feeding stats and personality bios.",
+};
 import { CatProfileCard } from "@/components/cats/CatProfileCard";
 
 export const dynamic = "force-dynamic";

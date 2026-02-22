@@ -28,9 +28,54 @@ const notoSansSC = Noto_Sans_SC({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://purrview.vercel.app";
+const TITLE = "PurrView — AI-Powered Care for 5 Beloved Cats";
+const DESCRIPTION =
+  "An open-source AI dashboard that watches over 5 rescue cats — tracking every meal, sip, and visit with computer vision and Gemini, so they never miss a beat.";
+
 export const metadata: Metadata = {
-  title: "PurrView - Cat Feeding Monitor",
-  description: "Monitor your cats' feeding habits with AI-powered analysis",
+  title: {
+    default: TITLE,
+    template: "%s | PurrView",
+  },
+  description: DESCRIPTION,
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "PurrView",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PurrView — AI care for 5 beloved cats",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og-image.png"],
+  },
+  keywords: [
+    "cat monitor",
+    "AI pet care",
+    "feeding tracker",
+    "computer vision",
+    "rescue cats",
+    "Gemini AI",
+    "open source",
+    "pet dashboard",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

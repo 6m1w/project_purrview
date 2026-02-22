@@ -1,7 +1,8 @@
-"""Daily digest: per-cat feeding stats with anomaly detection.
+"""Daily digest: per-cat feeding stats with anomaly detection and system stats.
 
 Queries Supabase for yesterday's events, compares against 7-day rolling
-average, and sends a Lark card with per-cat breakdown + anomaly flags.
+average, and sends a Lark card with per-cat breakdown + anomaly flags
++ system status (Gemini calls, cost, worker health).
 
 Usage:
     cd apps/worker
@@ -12,12 +13,16 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import subprocess
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from .analyzer import CAT_NAMES
 from .notifier import LarkNotifier
 from .storage import PurrviewStorage
+
+# Gemini cost per call (16 images incl. refs, Gemini 2.5 Flash pricing)
+GEMINI_COST_PER_CALL = 0.0026
 
 
 def _query_daily_counts(
@@ -48,11 +53,40 @@ def _query_daily_counts(
     return counts
 
 
+def _query_frame_count(
+    storage: PurrviewStorage,
+    date_start: str,
+    date_end: str,
+) -> int:
+    """Count frames captured yesterday (proxy for Gemini API calls)."""
+    result = (
+        storage.client.table("purrview_frames")
+        .select("id", count="exact")
+        .gte("captured_at", date_start)
+        .lt("captured_at", date_end)
+        .execute()
+    )
+    return result.count or 0
+
+
+def _get_worker_status() -> str:
+    """Check if purrview-worker systemd service is active."""
+    try:
+        result = subprocess.run(
+            ["systemctl", "is-active", "purrview-worker"],
+            capture_output=True, text=True, timeout=5,
+        )
+        status = result.stdout.strip()
+        return status if status else "unknown"
+    except Exception:
+        return "unknown"
+
+
 def build_digest(
     storage: PurrviewStorage,
     target_date: Optional[datetime] = None,
 ) -> dict:
-    """Build digest data: yesterday's counts vs 7-day average per cat.
+    """Build digest data: yesterday's counts vs 7-day average per cat + system stats.
 
     Returns:
         {
@@ -69,6 +103,11 @@ def build_digest(
             },
             "total_eating": 12,
             "total_drinking": 5,
+            "system_stats": {
+                "gemini_calls": 42,
+                "estimated_cost": 0.11,
+                "worker_status": "active",
+            },
         }
     """
     if target_date is None:
@@ -116,11 +155,26 @@ def build_digest(
         total_eating += yc["eating"]
         total_drinking += yc["drinking"]
 
+    # System stats: frame count as proxy for Gemini calls
+    frame_count = _query_frame_count(storage, y_start.isoformat(), y_end.isoformat())
+    # Each event has ~1 saved frame, but Gemini is called on every motion trigger.
+    # Use total events (eating + drinking) + some overhead as rough call estimate.
+    # More accurate: frames saved ≈ successful calls that found cats.
+    # Total calls ≈ frames * ~3x (many calls find no cats and save no frame).
+    estimated_calls = max(frame_count * 3, total_eating + total_drinking)
+    estimated_cost = estimated_calls * GEMINI_COST_PER_CALL
+    worker_status = _get_worker_status()
+
     return {
         "date": date_str,
         "cats": cats,
         "total_eating": total_eating,
         "total_drinking": total_drinking,
+        "system_stats": {
+            "gemini_calls": estimated_calls,
+            "estimated_cost": round(estimated_cost, 2),
+            "worker_status": worker_status,
+        },
     }
 
 
@@ -131,6 +185,7 @@ def run_digest(dry_run: bool = False) -> None:
 
     date_str = digest["date"]
     cats = digest["cats"]
+    sys_stats = digest.get("system_stats", {})
 
     print(f"[digest] Date: {date_str}")
     print(f"[digest] Total: {digest['total_eating']} eating, {digest['total_drinking']} drinking")
@@ -148,6 +203,11 @@ def run_digest(dry_run: bool = False) -> None:
             f"  {name:<6} {c['yesterday_eating']:>4} {c['avg_eating']:>5} "
             f"{c['yesterday_drinking']:>6} {c['avg_drinking']:>5}  {alert_str}"
         )
+
+    if sys_stats:
+        print()
+        print(f"  System: Gemini ~{sys_stats['gemini_calls']} calls, "
+              f"~${sys_stats['estimated_cost']:.2f}, worker={sys_stats['worker_status']}")
 
     if dry_run:
         print("\n[digest] Dry run — not sending to Lark")

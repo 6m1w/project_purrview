@@ -1,0 +1,25 @@
+[Unit]
+Description=PurrView Worker — RTMP stream processing with Gemini AI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/ENG/project_purrview/apps/worker
+ExecStart=/home/ubuntu/ENG/project_purrview/apps/worker/.venv/bin/python -u -m src.main
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# .env is loaded by pydantic-settings in config.py (handles inline comments correctly)
+# Do NOT use EnvironmentFile here — systemd does not strip inline comments
+
+# Logging (stdout/stderr -> journalctl)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=purrview-worker
+
+[Install]
+WantedBy=multi-user.target

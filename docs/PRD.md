@@ -117,6 +117,7 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] SEO：OpenGraph + Twitter Card + OG 图片 + 双语 README
 
 ### Phase 6：生产部署 + 监控
-- [ ] Worker Docker 化部署到 EC2（主要为崩溃自动恢复 --restart=always）
+- [x] Worker systemd 服务（Restart=always，替代 Docker 方案，更轻量）
 - [x] Web 部署到 Vercel
-- [ ] 监控：Worker 运行时长、Gemini 调用量/错误率，随每日 digest 一起推送
+- [x] 监控：Gemini 调用量/成本估算 + Worker 状态，随每日 digest 推送
+- [x] Lark 卡片优化：喂食通知精简布局 + Digest 结构化排版 + Dashboard 链接

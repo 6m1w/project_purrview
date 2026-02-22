@@ -10,6 +10,17 @@ import httpx
 from .config import get_settings
 from .tracker import FeedingSession
 
+DASHBOARD_URL = "https://purrview.dev/dashboard"
+
+# Per-cat emoji for visual distinction in digest
+CAT_EMOJI: dict[str, str] = {
+    "大吉": "🍊",
+    "小慢": "🎨",
+    "小黑": "🖤",
+    "麻酱": "🟤",
+    "松花": "🐯",
+}
+
 
 class LarkNotifier:
     """Sends feeding alerts and daily digests to Lark via webhook."""
@@ -36,6 +47,7 @@ class LarkNotifier:
         cat = session.cat_name or "Unknown cat"
         activity = session.activity
         duration = (session.last_seen_at - session.started_at) / 60
+        frames = len(session.frames)
         tz_beijing = timezone(timedelta(hours=8))
         started = datetime.fromtimestamp(session.started_at, tz=tz_beijing)
         ended = datetime.fromtimestamp(session.last_seen_at, tz=tz_beijing)
@@ -43,63 +55,33 @@ class LarkNotifier:
         emoji = "💧" if activity == "drinking" else "🍽️"
         verb = "drank water" if activity == "drinking" else "ate"
 
-        elements: list[dict] = []
-        elements.extend([
+        # Compact summary line: time · duration · frames
+        summary = f"⏱ {time_range}  ·  {duration:.1f} min  ·  {frames} frames"
+
+        elements: list[dict] = [
             {
                 "tag": "div",
-                "fields": [
-                    {
-                        "is_short": True,
-                        "text": {"tag": "lark_md", "content": f"**Cat**\n{cat}"},
-                    },
-                    {
-                        "is_short": True,
-                        "text": {"tag": "lark_md", "content": f"**Activity**\n{activity}"},
-                    },
-                ],
-            },
-            {
-                "tag": "div",
-                "fields": [
-                    {
-                        "is_short": True,
-                        "text": {
-                            "tag": "lark_md",
-                            "content": f"**Duration**\n{duration:.1f} min",
-                        },
-                    },
-                    {
-                        "is_short": True,
-                        "text": {
-                            "tag": "lark_md",
-                            "content": f"**Frames**\n{len(session.frames)}",
-                        },
-                    },
-                ],
+                "text": {"tag": "lark_md", "content": summary},
             },
             {"tag": "hr"},
-        ])
+        ]
 
-        # Image link (if available)
+        # Action buttons
+        actions: list[dict] = []
         if image_url:
-            elements.append({
-                "tag": "action",
-                "actions": [
-                    {
-                        "tag": "button",
-                        "text": {"tag": "plain_text", "content": "📷 View Photo"},
-                        "type": "primary",
-                        "url": image_url,
-                    },
-                ],
+            actions.append({
+                "tag": "button",
+                "text": {"tag": "plain_text", "content": "📷 View Photo"},
+                "type": "primary",
+                "url": image_url,
             })
-
-        elements.append({
-            "tag": "note",
-            "elements": [
-                {"tag": "plain_text", "content": time_range},
-            ],
+        actions.append({
+            "tag": "button",
+            "text": {"tag": "plain_text", "content": "📊 Dashboard"},
+            "type": "default",
+            "url": DASHBOARD_URL,
         })
+        elements.append({"tag": "action", "actions": actions})
 
         card = {
             "msg_type": "interactive",
@@ -114,10 +96,11 @@ class LarkNotifier:
         return self._post_to_lark(card)
 
     def send_daily_digest(self, digest: dict) -> bool:
-        """Send a daily digest card with per-cat stats and anomaly flags.
+        """Send a daily digest card with per-cat stats, system stats, and anomaly flags.
 
         Args:
-            digest: Output of digest.build_digest() containing date, cats, totals.
+            digest: Output of digest.build_digest() containing date, cats, totals,
+                    and optional system_stats dict.
         """
         if not self.enabled:
             return False
@@ -126,11 +109,11 @@ class LarkNotifier:
         cats = digest["cats"]
         total_eating = digest["total_eating"]
         total_drinking = digest["total_drinking"]
+        system_stats = digest.get("system_stats", {})
 
-        # Build per-cat table
-        header_line = "Cat       Eat  (avg)   Drink (avg)"
-        table_lines = [header_line]
+        # Build per-cat lines with emoji
         alerts: list[str] = []
+        cat_lines: list[str] = []
 
         from .analyzer import CAT_NAMES
         for name in CAT_NAMES:
@@ -141,17 +124,18 @@ class LarkNotifier:
             ad = c.get("avg_drinking", 0)
             alert = c.get("alert")
 
-            flag = "  "
+            em = CAT_EMOJI.get(name, "🐱")
+            flag = ""
             if alert == "no_eating":
-                flag = "🚨"
+                flag = " 🚨"
                 alerts.append(f"🚨 **{name}** 昨天未检测到进食")
             elif alert == "low_eating":
-                flag = "⚠️"
+                flag = " ⚠️"
                 alerts.append(f"⚠️ **{name}** 昨天进食明显减少")
 
-            table_lines.append(f"{flag} {name}    {ye}   ({ae})     {yd}   ({ad})")
-
-        table_md = "```\n" + "\n".join(table_lines) + "\n```"
+            cat_lines.append(
+                f"{em} **{name}**{flag}  ·  Eat: {ye} ({ae})  ·  Drink: {yd} ({ad})"
+            )
 
         # Choose header color based on alerts
         has_red = any(c.get("alert") == "no_eating" for c in cats.values())
@@ -167,32 +151,29 @@ class LarkNotifier:
             title = f"📊 PurrView Daily — {date_str}"
 
         elements: list[dict] = [
+            # Totals
             {
                 "tag": "div",
                 "fields": [
                     {
                         "is_short": True,
-                        "text": {
-                            "tag": "lark_md",
-                            "content": f"**Total eating**\n{total_eating}",
-                        },
+                        "text": {"tag": "lark_md", "content": f"**Total Eating**\n{total_eating}"},
                     },
                     {
                         "is_short": True,
-                        "text": {
-                            "tag": "lark_md",
-                            "content": f"**Total drinking**\n{total_drinking}",
-                        },
+                        "text": {"tag": "lark_md", "content": f"**Total Drinking**\n{total_drinking}"},
                     },
                 ],
             },
             {"tag": "hr"},
+            # Per-cat breakdown
             {
                 "tag": "div",
-                "text": {"tag": "lark_md", "content": table_md},
+                "text": {"tag": "lark_md", "content": "\n".join(cat_lines)},
             },
         ]
 
+        # Alert section
         if alerts:
             elements.append({"tag": "hr"})
             elements.append({
@@ -200,10 +181,36 @@ class LarkNotifier:
                 "text": {"tag": "lark_md", "content": "\n".join(alerts)},
             })
 
+        # System stats section
+        if system_stats:
+            gemini_calls = system_stats.get("gemini_calls", 0)
+            cost = system_stats.get("estimated_cost", 0)
+            worker_status = system_stats.get("worker_status", "unknown")
+
+            sys_line = (
+                f"🤖 Gemini: **{gemini_calls}** calls · "
+                f"~**${cost:.2f}**  ·  Worker: **{worker_status}**"
+            )
+            elements.append({"tag": "hr"})
+            elements.append({
+                "tag": "div",
+                "text": {"tag": "lark_md", "content": sys_line},
+            })
+
+        # Dashboard button + footer
+        elements.append({
+            "tag": "action",
+            "actions": [{
+                "tag": "button",
+                "text": {"tag": "plain_text", "content": "📊 Open Dashboard"},
+                "type": "primary",
+                "url": DASHBOARD_URL,
+            }],
+        })
         elements.append({
             "tag": "note",
             "elements": [
-                {"tag": "plain_text", "content": "PurrView Daily Digest · (avg) = 7-day rolling average"},
+                {"tag": "plain_text", "content": "PurrView Daily · (avg) = 7-day rolling average"},
             ],
         })
 

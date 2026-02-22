@@ -110,12 +110,13 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] Dashboard 页：实时数据 + Pixelify Sans 像素风
 - [x] 部署到 Vercel (purrview.dev)
 - [ ] 为每只猫生成视频 + 首页轮播（shader-debug.html 调参，大吉/小黑待生成）
-- [ ] 移动端适配：Hero 居中布局、Nav hamburger、字号/间距调整
-- [ ] 猫咪管理：资料卡片 + 参考照片上传
-- [ ] 进食时间线：事件列表 + 帧缩略图
-- [ ] 统计报表：每日/每周图表
+- [x] 移动端适配：底部 Tab Bar + 字号调整
+- [x] 猫咪资料卡片：头像 + 英文介绍 + 统计 + 7 日趋势图
+- [x] 进食时间线：事件列表 + 筛选 + 分页 + 帧链接
+- [x] 统计报表：合并到 Dashboard Analytics（月趋势/猫分布/时段/时长）
+- [x] SEO：OpenGraph + Twitter Card + OG 图片 + 双语 README
 
 ### Phase 6：生产部署 + 监控
-- [ ] Worker Docker 化部署到 EC2
+- [ ] Worker Docker 化部署到 EC2（主要为崩溃自动恢复 --restart=always）
 - [x] Web 部署到 Vercel
-- [ ] 监控：Worker 心跳、Gemini 调用量/成本
+- [ ] 监控：Worker 运行时长、Gemini 调用量/错误率，随每日 digest 一起推送

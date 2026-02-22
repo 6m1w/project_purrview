@@ -361,5 +361,5 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className, on
     video.play().catch(() => {});
   }, [videoSrc, handleEnded]);
 
-  return <canvas ref={canvasRef} className={className} />;
+  return <canvas ref={canvasRef} className={className} style={{ backgroundColor: "#f4f4f0" }} />;
 }

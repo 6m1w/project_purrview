@@ -106,11 +106,12 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] 阈值可配置（第一周只统计不告警，第二周启用 🚨 红色告警）
 
 ### Phase 5：Web 仪表板
-- [x] Hero 页：WebGL scanline shader + 猫咪视频
+- [x] Hero 页：WebGL scanline shader + 猫咪视频（原色渲染）
 - [x] Dashboard 页：实时数据 + Pixelify Sans 像素风
 - [x] 部署到 Vercel (purrview.dev)
-- [ ] 为每只猫生成视频 + 首页轮播（shader-debug.html 调参，大吉/小黑待生成）
-- [x] 移动端适配：底部 Tab Bar + 字号调整
+- [x] 5 只猫视频轮播：去背景处理 + per-cat shader 调参 + 视频预加载
+- [x] Shader 增强：darknessGamma（浅色猫对比度）、cropLeft/cropRight（黑边裁剪）、原色模式
+- [x] 移动端适配：底部 Tab Bar + 字号调整 + dvh 视口适配
 - [x] 猫咪资料卡片：头像 + 英文介绍 + 统计 + 7 日趋势图
 - [x] 进食时间线：事件列表 + 筛选 + 分页 + 帧链接
 - [x] 统计报表：合并到 Dashboard Analytics（月趋势/猫分布/时段/时长）

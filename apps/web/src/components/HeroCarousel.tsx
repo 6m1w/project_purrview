@@ -19,22 +19,22 @@ const SLIDES: CatSlide[] = [
   {
     name: "songhua",
     videoSrc: "/songhua_nobg.webm",
-    // TODO: tune via shader-debug.html
+    config: { cropLeft: 0.17 },
   },
   {
     name: "xiaoman",
     videoSrc: "/xiaoman_nobg.webm",
-    config: { cropLeft: 0.23, darknessGamma: 0.75 },
+    config: { cropLeft: 0.22, cropRight: 0.22, darknessGamma: 0.75 },
   },
   {
     name: "daji",
     videoSrc: "/daji_nobg.webm",
-    config: { cropLeft: 0.23, darknessGamma: 0.75 },
+    config: { cropLeft: 0.22, cropRight: 0.22, darknessGamma: 0.75 },
   },
   {
     name: "xiaohei",
     videoSrc: "/xiaohei_nobg.webm",
-    config: { cropLeft: 0.23, darknessGamma: 0.7 },
+    config: { cropLeft: 0.22, cropRight: 0.22, darknessGamma: 0.7 },
   },
 ];
 

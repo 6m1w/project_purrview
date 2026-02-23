@@ -9,7 +9,7 @@
   body { background: #f4f4f0; overflow: hidden; font-family: monospace; }
   canvas { display: block; width: 100vw; height: 100vh; }
   #controls {
-    position: fixed; top: 10px; right: 10px; z-index: 100;
+    position: fixed; top: 10px; left: 10px; z-index: 100;
     background: rgba(0,0,0,0.85); color: #fff; padding: 16px;
     border-radius: 8px; font-size: 12px; min-width: 280px;
     max-height: 90vh; overflow-y: auto;
@@ -49,7 +49,17 @@
         <option value="/majiang_nobg.webm" selected>majiang (麻酱)</option>
         <option value="/songhua_nobg.webm">songhua (松花)</option>
         <option value="/xiaoman_nobg.webm">xiaoman (小慢)</option>
+        <option value="/daji_nobg.webm">daji (大吉)</option>
+        <option value="/xiaohei_nobg.webm">xiaohei (小黑)</option>
       </select>
+    </div>
+    <div class="ctrl">
+      <label style="margin-bottom:4px;">Copy params from:</label>
+      <div style="display:flex;gap:4px;">
+        <select id="copyFrom" style="flex:1;padding:4px;background:#222;color:#0f0;border:1px solid #444;font-family:monospace;font-size:11px;">
+        </select>
+        <button id="copyBtn" style="padding:4px 10px;background:#333;color:#0f0;border:1px solid #555;cursor:pointer;font-family:monospace;font-size:11px;">Copy</button>
+      </div>
     </div>
   </div>
 
@@ -72,12 +82,12 @@
   <div class="section">
     <div class="section-title">Scanlines</div>
     <div class="ctrl">
-      <label>Line Density (gap px) <span class="val" id="v_density">4</span></label>
-      <input type="range" id="lineDensity" min="2" max="20" step="0.5" value="4">
+      <label>Line Density (gap px) <span class="val" id="v_lineDensity">6</span></label>
+      <input type="range" id="lineDensity" min="2" max="20" step="0.5" value="6">
     </div>
     <div class="ctrl">
-      <label>Line Width Ratio <span class="val" id="v_widthRatio">0.42</span></label>
-      <input type="range" id="widthRatio" min="0.1" max="0.95" step="0.01" value="0.42">
+      <label>Line Width Ratio <span class="val" id="v_widthRatio">0.70</span></label>
+      <input type="range" id="widthRatio" min="0.1" max="0.95" step="0.01" value="0.7">
     </div>
     <div class="ctrl">
       <label>Threshold (binary mode) <span class="val" id="v_threshold">0.55</span></label>
@@ -88,24 +98,24 @@
   <div class="section">
     <div class="section-title">Glitch / Jitter</div>
     <div class="ctrl">
-      <label>Jitter (px) <span class="val" id="v_jitter">15</span></label>
-      <input type="range" id="jitter" min="0" max="80" step="1" value="15">
+      <label>Jitter (px) <span class="val" id="v_jitter">0</span></label>
+      <input type="range" id="jitter" min="0" max="80" step="1" value="0">
     </div>
     <div class="ctrl">
-      <label>Jitter Speed <span class="val" id="v_jitterSpeed">18</span></label>
-      <input type="range" id="jitterSpeed" min="1" max="60" step="1" value="18">
+      <label>Jitter Speed <span class="val" id="v_jitterSpeed">15</span></label>
+      <input type="range" id="jitterSpeed" min="1" max="60" step="1" value="15">
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">Position</div>
     <div class="ctrl">
-      <label>Offset X <span class="val" id="v_offsetX">0.00</span></label>
-      <input type="range" id="offsetX" min="-0.4" max="0.4" step="0.01" value="0">
+      <label>Offset X <span class="val" id="v_offsetX">-0.10</span></label>
+      <input type="range" id="offsetX" min="-0.4" max="0.4" step="0.01" value="-0.1">
     </div>
     <div class="ctrl">
-      <label>Offset Y <span class="val" id="v_offsetY">0.00</span></label>
-      <input type="range" id="offsetY" min="-0.4" max="0.4" step="0.01" value="0">
+      <label>Offset Y <span class="val" id="v_offsetY">-0.03</span></label>
+      <input type="range" id="offsetY" min="-0.4" max="0.4" step="0.01" value="-0.03">
     </div>
     <div class="ctrl">
       <label>Zoom <span class="val" id="v_zoom">1.00</span></label>
@@ -116,32 +126,40 @@
   <div class="section">
     <div class="section-title">Cleanup</div>
     <div class="ctrl">
-      <label>Alpha Threshold <span class="val" id="v_alphaThreshold">0.50</span></label>
-      <input type="range" id="alphaThreshold" min="0.1" max="0.9" step="0.05" value="0.5">
+      <label>Alpha Threshold <span class="val" id="v_alphaThreshold">0.70</span></label>
+      <input type="range" id="alphaThreshold" min="0.1" max="0.9" step="0.05" value="0.7">
     </div>
     <div class="ctrl">
-      <label>Min Darkness <span class="val" id="v_minDarkness">0.08</span></label>
-      <input type="range" id="minDarkness" min="0" max="0.3" step="0.01" value="0.08">
+      <label>Min Darkness <span class="val" id="v_minDarkness">0.30</span></label>
+      <input type="range" id="minDarkness" min="0" max="0.5" step="0.01" value="0.3">
     </div>
     <div class="ctrl">
       <label>Crop Left <span class="val" id="v_cropLeft">0.00</span></label>
       <input type="range" id="cropLeft" min="0" max="0.5" step="0.01" value="0">
+    </div>
+    <div class="ctrl">
+      <label>Crop Right <span class="val" id="v_cropRight">0.00</span></label>
+      <input type="range" id="cropRight" min="0" max="0.5" step="0.01" value="0">
+    </div>
+    <div class="ctrl">
+      <label>Darkness Gamma <span class="val" id="v_darknessGamma">1.00</span></label>
+      <input type="range" id="darknessGamma" min="0.2" max="2.0" step="0.05" value="1.0">
     </div>
   </div>
 
   <div class="section">
     <div class="section-title">Colors</div>
     <div class="ctrl">
-      <label>FG Brightness <span class="val" id="v_fgBright">0.07</span></label>
-      <input type="range" id="fgBright" min="0" max="0.3" step="0.01" value="0.07">
+      <label>FG Brightness <span class="val" id="v_fgBright">0.10</span></label>
+      <input type="range" id="fgBright" min="0" max="0.3" step="0.01" value="0.1">
     </div>
     <div class="ctrl">
-      <label>BG Brightness <span class="val" id="v_bgBright">0.96</span></label>
-      <input type="range" id="bgBright" min="0.7" max="1.0" step="0.01" value="0.96">
+      <label>BG Brightness <span class="val" id="v_bgBright">0.92</span></label>
+      <input type="range" id="bgBright" min="0.7" max="1.0" step="0.01" value="0.92">
     </div>
     <div class="ctrl">
-      <label>BG Scanline Opacity <span class="val" id="v_bgLineOpacity">0.93</span></label>
-      <input type="range" id="bgLineOpacity" min="0.8" max="1.0" step="0.01" value="0.93">
+      <label>BG Scanline Opacity <span class="val" id="v_bgLineOpacity">0.90</span></label>
+      <input type="range" id="bgLineOpacity" min="0.8" max="1.0" step="0.01" value="0.9">
     </div>
   </div>
 
@@ -180,9 +198,11 @@ uniform float u_zoom;
 uniform float u_alphaThreshold;
 uniform float u_minDarkness;
 uniform float u_cropLeft;
+uniform float u_cropRight;
 uniform vec3 u_fg;
 uniform vec3 u_bg;
 uniform float u_bgLineOpacity;
+uniform float u_darknessGamma;
 
 float hash(float n) {
   return fract(sin(n) * 43758.5453123);
@@ -248,8 +268,8 @@ void main() {
     return;
   }
 
-  // Crop left edge (removes black border artifacts)
-  if (u_cropLeft > 0.0 && sampleUV.x < u_cropLeft) {
+  // Crop edges (removes black border artifacts)
+  if ((u_cropLeft > 0.0 && sampleUV.x < u_cropLeft) || (u_cropRight > 0.0 && sampleUV.x > 1.0 - u_cropRight)) {
     if (u_bgScanlines > 0.5) {
       float bgLineWidth = 0.7;
       if (local <= bgLineWidth) {
@@ -267,6 +287,8 @@ void main() {
   vec4 c = texture2D(u_tex, sampleUV);
   float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
   float darkness = 1.0 - luma;
+  // Gamma curve: < 1.0 boosts light areas (makes light cats more visible)
+  darkness = pow(darkness, u_darknessGamma);
 
   // Transparent or too-bright area -> background
   if (c.a < u_alphaThreshold || darkness < u_minDarkness) {
@@ -339,7 +361,7 @@ const loc = {};
 ['u_tex','u_resolution','u_videoSize','u_time','u_lineDensity','u_widthRatio',
  'u_threshold','u_jitterPx','u_jitterSpeed','u_variableWidth','u_coverMode',
  'u_bgScanlines','u_offsetX','u_offsetY','u_zoom','u_alphaThreshold','u_minDarkness',
- 'u_cropLeft','u_fg','u_bg','u_bgLineOpacity'
+ 'u_cropLeft','u_cropRight','u_darknessGamma','u_fg','u_bg','u_bgLineOpacity'
 ].forEach(name => loc[name] = gl.getUniformLocation(prog, name));
 
 // Texture
@@ -362,17 +384,10 @@ video.crossOrigin = 'anonymous';
 video.play().catch(() => {});
 document.body.addEventListener('click', () => { if (video.paused) video.play(); });
 
-// Video source switcher
-document.getElementById('videoSelect').addEventListener('change', (e) => {
-  video.src = e.target.value;
-  video.load();
-  video.play().catch(() => {});
-});
-
 // Controls binding
 const sliders = {};
 ['lineDensity','widthRatio','threshold','jitter','jitterSpeed',
- 'offsetX','offsetY','zoom','alphaThreshold','minDarkness','cropLeft','fgBright','bgBright','bgLineOpacity'
+ 'offsetX','offsetY','zoom','alphaThreshold','minDarkness','cropLeft','cropRight','darknessGamma','fgBright','bgBright','bgLineOpacity'
 ].forEach(id => {
   const el = document.getElementById(id);
   const valEl = document.getElementById('v_' + id);
@@ -383,6 +398,62 @@ const sliders = {};
 const checks = {};
 ['variableWidth','coverMode','bgScanlines'].forEach(id => {
   checks[id] = document.getElementById(id);
+});
+
+// --- Per-cat config storage ---
+const videoSelect = document.getElementById('videoSelect');
+const catConfigs = {};
+let currentVideo = videoSelect.value;
+
+function readSliders() {
+  const cfg = {};
+  Object.keys(sliders).forEach(id => cfg[id] = parseFloat(sliders[id].value));
+  Object.keys(checks).forEach(id => cfg[id] = checks[id].checked);
+  return cfg;
+}
+
+function applySliders(cfg) {
+  Object.keys(sliders).forEach(id => {
+    if (id in cfg) {
+      sliders[id].value = cfg[id];
+      const valEl = document.getElementById('v_' + id);
+      if (valEl) valEl.textContent = parseFloat(sliders[id].value).toFixed(2);
+    }
+  });
+  Object.keys(checks).forEach(id => {
+    if (id in cfg) checks[id].checked = cfg[id];
+  });
+}
+
+// Initialize all cats with current default slider values
+Array.from(videoSelect.options).forEach(opt => {
+  catConfigs[opt.value] = readSliders();
+});
+
+// Switch cat: save current → load new
+videoSelect.addEventListener('change', (e) => {
+  catConfigs[currentVideo] = readSliders();
+  currentVideo = e.target.value;
+  if (catConfigs[currentVideo]) applySliders(catConfigs[currentVideo]);
+  video.src = currentVideo;
+  video.load();
+  video.play().catch(() => {});
+});
+
+// Copy From: populate dropdown + handler
+const copyFrom = document.getElementById('copyFrom');
+const copyBtn = document.getElementById('copyBtn');
+Array.from(videoSelect.options).forEach(opt => {
+  const o = document.createElement('option');
+  o.value = opt.value;
+  o.textContent = opt.textContent;
+  copyFrom.appendChild(o);
+});
+copyBtn.addEventListener('click', () => {
+  const src = copyFrom.value;
+  if (src && catConfigs[src]) {
+    applySliders(catConfigs[src]);
+  }
 });
 
 // Export
@@ -404,6 +475,8 @@ document.getElementById('export-btn').addEventListener('click', () => {
     alphaThreshold: parseFloat(sliders.alphaThreshold.value),
     minDarkness: parseFloat(sliders.minDarkness.value),
     cropLeft: parseFloat(sliders.cropLeft.value),
+    cropRight: parseFloat(sliders.cropRight.value),
+    darknessGamma: parseFloat(sliders.darknessGamma.value),
     fgBright: parseFloat(sliders.fgBright.value),
     bgBright: parseFloat(sliders.bgBright.value),
     bgLineOpacity: parseFloat(sliders.bgLineOpacity.value),
@@ -456,6 +529,8 @@ function draw(t) {
   gl.uniform1f(loc.u_alphaThreshold, parseFloat(sliders.alphaThreshold.value));
   gl.uniform1f(loc.u_minDarkness, parseFloat(sliders.minDarkness.value));
   gl.uniform1f(loc.u_cropLeft, parseFloat(sliders.cropLeft.value));
+  gl.uniform1f(loc.u_cropRight, parseFloat(sliders.cropRight.value));
+  gl.uniform1f(loc.u_darknessGamma, parseFloat(sliders.darknessGamma.value));
   gl.uniform3f(loc.u_fg, fg, fg, fg);
   gl.uniform3f(loc.u_bg, bg, bg, bg - 0.016);
   gl.uniform1f(loc.u_bgLineOpacity, parseFloat(sliders.bgLineOpacity.value));

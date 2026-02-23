@@ -14,6 +14,8 @@ export interface ScanlineConfig {
   minDarkness: number;
   bgLineOpacity: number;
   cropLeft: number;
+  cropRight: number;
+  darknessGamma: number;
 }
 
 interface ScanlineCanvasProps {
@@ -36,6 +38,8 @@ const DEFAULT_CONFIG: ScanlineConfig = {
   minDarkness: 0.3,
   bgLineOpacity: 0.9,
   cropLeft: 0,
+  cropRight: 0,
+  darknessGamma: 1.0,
 };
 
 const BG = [0.92, 0.92, 0.904] as const; // bgBright=0.92
@@ -67,6 +71,8 @@ uniform float u_alphaThreshold;
 uniform float u_minDarkness;
 uniform float u_bgLineOpacity;
 uniform float u_cropLeft;
+uniform float u_cropRight;
+uniform float u_darknessGamma;
 uniform vec3 u_fg;
 uniform vec3 u_bg;
 
@@ -118,8 +124,8 @@ void main() {
     return;
   }
 
-  // Crop left edge (removes black border artifacts)
-  if (u_cropLeft > 0.0 && sampleUV.x < u_cropLeft) {
+  // Crop edges (removes black border artifacts)
+  if ((u_cropLeft > 0.0 && sampleUV.x < u_cropLeft) || (u_cropRight > 0.0 && sampleUV.x > 1.0 - u_cropRight)) {
     float bgLineWidth = 0.7;
     if (local <= bgLineWidth) {
       gl_FragColor = vec4(u_bg * u_bgLineOpacity, 1.0);
@@ -133,6 +139,8 @@ void main() {
   vec4 c = texture2D(u_tex, sampleUV);
   float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
   float darkness = 1.0 - luma;
+  // Gamma curve: < 1.0 boosts light areas (makes light cats more visible)
+  darkness = pow(darkness, u_darknessGamma);
 
   // Treat as background if: transparent OR too bright (noise cleanup)
   if (c.a < u_alphaThreshold || darkness < u_minDarkness) {
@@ -249,6 +257,8 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className, on
       minDarkness: gl.getUniformLocation(program, "u_minDarkness"),
       bgLineOpacity: gl.getUniformLocation(program, "u_bgLineOpacity"),
       cropLeft: gl.getUniformLocation(program, "u_cropLeft"),
+      cropRight: gl.getUniformLocation(program, "u_cropRight"),
+      darknessGamma: gl.getUniformLocation(program, "u_darknessGamma"),
       fg: gl.getUniformLocation(program, "u_fg"),
       bg: gl.getUniformLocation(program, "u_bg"),
     };
@@ -321,6 +331,8 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className, on
       gl!.uniform1f(u.minDarkness, cfg.minDarkness);
       gl!.uniform1f(u.bgLineOpacity, cfg.bgLineOpacity);
       gl!.uniform1f(u.cropLeft, cfg.cropLeft);
+      gl!.uniform1f(u.cropRight, cfg.cropRight);
+      gl!.uniform1f(u.darknessGamma, cfg.darknessGamma);
 
       gl!.drawArrays(gl!.TRIANGLE_STRIP, 0, 4);
     }

@@ -24,9 +24,18 @@ const SLIDES: CatSlide[] = [
   {
     name: "xiaoman",
     videoSrc: "/xiaoman_nobg.webm",
-    config: { cropLeft: 0.23 },
+    config: { cropLeft: 0.23, darknessGamma: 0.75 },
   },
-  // TODO: add daji, xiaohei
+  {
+    name: "daji",
+    videoSrc: "/daji_nobg.webm",
+    config: { cropLeft: 0.23, darknessGamma: 0.75 },
+  },
+  {
+    name: "xiaohei",
+    videoSrc: "/xiaohei_nobg.webm",
+    config: { cropLeft: 0.23, darknessGamma: 0.7 },
+  },
 ];
 
 export function HeroCarousel() {

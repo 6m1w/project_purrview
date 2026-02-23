@@ -50,6 +50,19 @@ export function HeroCarousel() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
+  // Preload all videos via hidden video elements (more reliable than <link rel="preload">)
+  useEffect(() => {
+    const vids = SLIDES.map((s) => {
+      const v = document.createElement("video");
+      v.preload = "auto";
+      v.muted = true;
+      v.src = s.videoSrc;
+      v.load();
+      return v;
+    });
+    return () => vids.forEach((v) => { v.src = ""; });
+  }, []);
+
   const goTo = useCallback((idx: number) => {
     setActive(idx);
   }, []);
@@ -67,11 +80,6 @@ export function HeroCarousel() {
 
   return (
     <>
-      {/* Preload all video files so transitions are instant */}
-      {SLIDES.map((s) => (
-        <link key={s.name} rel="preload" href={s.videoSrc} as="video" />
-      ))}
-
       {/* Canvas — single instance, hot-swaps video source */}
       <div className="absolute inset-0">
         <ScanlineCanvas

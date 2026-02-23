@@ -85,7 +85,7 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] 用标注数据测试 Gemini prompt，调优识别准确率（92.8% exact match）
 - [x] 校准运动检测阈值（motion_score > 5000）
 - [x] 活动分类评估：eating/drinking/present（73.7% baseline）
-- [ ] ~~标定食盆 ROI 坐标~~ → 延后，Gemini 直接从全帧识别即可
+- [x] ~~标定食盆 ROI 坐标~~ → 不需要，Gemini 直接从全帧识别即可
 
 ### Phase 4：端到端 Pipeline 打通 ✅
 - [x] 实时分析：analyzer.py 接入 Gemini（IdentifyResult schema + 30s cooldown）

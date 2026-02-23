@@ -122,3 +122,4 @@ Lin 早上打开 PurrView 仪表板，查看昨晚到今早有哪些猫吃了东
 - [x] Web 部署到 Vercel
 - [x] 监控：Gemini 调用量/成本估算 + Worker 状态，随每日 digest 推送
 - [x] Lark 卡片优化：喂食通知精简布局 + Digest 结构化排版 + Dashboard 链接
+- [x] Supabase 数据保留：14 天 rolling cleanup（Storage + DB），cron 04:00 UTC

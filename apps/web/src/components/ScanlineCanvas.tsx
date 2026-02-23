@@ -308,7 +308,10 @@ export function ScanlineCanvas({ videoSrc, config: configOverride, className, on
       raf = requestAnimationFrame(draw);
       resize();
 
-      if (video.readyState < 2 || video.videoWidth === 0) return;
+      if (video.readyState < 2 || video.videoWidth === 0) {
+        gl!.clear(gl!.COLOR_BUFFER_BIT);
+        return;
+      }
 
       const cfg = configRef.current;
 

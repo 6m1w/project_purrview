@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ScanlineCanvas, type ScanlineConfig } from "./ScanlineCanvas";
 
 interface CatSlide {
@@ -72,6 +72,23 @@ export function HeroCarousel() {
     setActive((prev) => (prev + 1) % SLIDES.length);
   }, []);
 
+  // Swipe to switch slides on mobile
+  const touchStartX = useRef(0);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const SWIPE_THRESHOLD = 50;
+    if (dx < -SWIPE_THRESHOLD) {
+      // Swipe left → next
+      setActive((prev) => (prev + 1) % SLIDES.length);
+    } else if (dx > SWIPE_THRESHOLD) {
+      // Swipe right → prev
+      setActive((prev) => (prev - 1 + SLIDES.length) % SLIDES.length);
+    }
+  }, []);
+
   const slide = SLIDES[active];
   // On mobile, shift cat left (positive offsetX = content moves left in UV space)
   const mergedConfig = isMobile
@@ -81,7 +98,11 @@ export function HeroCarousel() {
   return (
     <>
       {/* Canvas — single instance, hot-swaps video source */}
-      <div className="absolute inset-0">
+      <div
+        className="absolute inset-0"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <ScanlineCanvas
           videoSrc={slide.videoSrc}
           config={mergedConfig}

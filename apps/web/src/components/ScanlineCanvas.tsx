@@ -162,7 +162,7 @@ void main() {
     return;
   }
 
-  gl_FragColor = vec4(u_fg, 1.0);
+  gl_FragColor = vec4(c.rgb, 1.0);
 }`;
 
 // --- WebGL helpers ---

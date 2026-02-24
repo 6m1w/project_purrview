@@ -1,6 +1,6 @@
 import type { TimelineEvent } from "@/lib/queries";
 import { CAT_HEADSHOTS } from "@/lib/queries";
-import { format } from "date-fns";
+// No date-fns needed — we use toLocaleString with Asia/Shanghai timezone
 import { Utensils, Droplets, Eye } from "lucide-react";
 import { CAT_COLORS } from "@/lib/catColors";
 import Image from "next/image";
@@ -25,6 +25,18 @@ function getActivityLabel(activity: string) {
     default:
       return "seen";
   }
+}
+
+function formatBeijingTime(date: Date): string {
+  return date.toLocaleString("sv-SE", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function formatDuration(seconds: number): string {
@@ -106,7 +118,7 @@ export function TimelineList({ events }: TimelineListProps) {
                   {getActivityIcon(event.activity)}
                 </p>
                 <p className="font-space-mono text-xs text-black/50 uppercase">
-                  {format(eventDate, "yyyy-MM-dd HH:mm:ss")}
+                  {formatBeijingTime(eventDate)}
                   {event.duration_seconds > 0 && (
                     <span className="ml-2 text-black/70">
                       ({formatDuration(event.duration_seconds)})
